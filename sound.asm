@@ -3,7 +3,8 @@ make_step_noise:
 	sta	$400C
 	sta	$400F
 	
-	lda	#%00000100
+;	lda	#%00000100
+	lda	#%10001101
 	sta	$400E
 	
 
@@ -22,4 +23,17 @@ make_no_move_sound:
 	sta	$4003
 
 	rts
+
+
+make_break_sound:
+	lda	#%00001111
+	sta	$400C
+
+	lda	#%00001110
+	sta	$400E
 	
+	lda	#%00001000
+	sta	$400F
+
+	
+	rts

@@ -445,7 +445,7 @@ transport_guy:
 
 break_block:
 	settile newx,newy,#T_FLOOR
-	rts
+	jmp	make_break_sound
 
 t_0_t_1_hit:
 	rts

@@ -1,4 +1,5 @@
 load_level:
+	debug_p ds_load_level
 	mov	#0, tmp_size+1
 	mov	#dir_right, gd
 	mov	#0, x_scroll
@@ -43,11 +44,11 @@ load_level:
 
 
 	debug_p	ds_tiles
-	mov	#tiles, debug_num
-	mov	(#tiles)+1, debug_num
+; 	mov	#tiles, debug_num
+; 	mov	(#tiles)+1, debug_num
 	ldx	#0
 .tile_print:	
-	mov	tiles, X, debug_num
+; 	mov	tiles, X, debug_num
 	inx
 	txa
 	cmp	#180
@@ -64,14 +65,16 @@ load_level:
 		
 	
 draw_level:
+	jsr	ppu_off
+	debug_p ds_draw_level
 	;; assumes load_level just called
+		
 	mov	#0, tile_pos
 .loop:	lda	tile_pos
 	cmp	#180
 	beq	.done
 	bit	#%00000100
 	bne	.continue
-	jsr	vwait
 .continue:	
 	ldx	tile_pos
 
@@ -86,8 +89,9 @@ draw_level:
 	jsr	draw_tile
 	inc	tile_pos
 	jmp	.loop
-		
-.done:	rts
+
+.done:	jsr	ppu_on		
+	rts
 
 
 draw_tile:

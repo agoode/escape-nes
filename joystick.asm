@@ -12,15 +12,16 @@ handle_joy:
 	lda	$4016
 	and	#%00000001	; start
 	beq	.j_up
-	inc	level_num
-	lda	level_num
-	cmp	#12
-	bne	.continue
-	lda	#0
-	sta	level_num
+ 	inc	level_num
+ 	lda	level_num
+ 	cmp	#12
+ 	bne	.continue
+ 	lda	#0
+ 	sta	level_num
 	
 .continue
-	jmp	start2
+	jsr	choose_level
+	rts
 	
 .j_up:	
 	lda	$4016

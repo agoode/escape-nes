@@ -2,7 +2,7 @@ intr:	sei
 	rti
 
 nmi:	
-;;; 	debug_p ds_nmi
+	pha
 	lda	#0
 	sta	$2006
 	sta	$2006
@@ -11,6 +11,14 @@ nmi:
 	lda	#0
 	sta	$2005
 
+	lda	sprite_dma_ok	; it's not always right to do DMA
+	beq	.no_dma
+
 	lda	#sprite/$100	; sprite
 	sta	$4014
+
+.no_dma:
+.done:	
+	
+	pla
 	rti

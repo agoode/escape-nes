@@ -1,5 +1,6 @@
 draw_guy:
-	debug_p	ds_draw_guy
+	; debug_p	ds_draw_guy
+	mov	#0,sprite_dma_ok
 	lda	gx
 	asl	a
 	asl	a
@@ -19,7 +20,7 @@ draw_guy:
 	tay	
 
 	lda	gd
-	sta	debug_num
+; 	sta	debug_num
 	cmp	#dir_up
 	beq	.up
 
@@ -209,6 +210,7 @@ draw_guy:
 
 	jmp	.done
 
-.done:	
+.done:
+	mov #1,sprite_dma_ok
 	rts
 

@@ -43,7 +43,7 @@ x_scroll: .ds	1
 	
 level_addr:	.ds	3
 
-		
+sprite_dma_ok:	.ds	1		
 		
 	.bss
 
@@ -65,7 +65,7 @@ author:	.ds	20
 	.include "joystick.asm"	
 	.include "guy.asm"	
 	.include "load-draw-level.asm"
-	
+	.include "ppu.asm"	
 
 	.bank	1
 	.org	$A000
@@ -78,26 +78,19 @@ author:	.ds	20
 
 		
 start:	sei
-	mov	#0, level_num
 
-start2:		
-	lda	#0
-	sta	$2000
-	sta	$2001
-
+	jsr	vwait	
+	jsr	ppu_off
 	jsr	init_sprite_memory
 	
 	debug_p	ds_begin
 	
 	jsr	vwait	
 	jsr	vwait
-	jsr	vwait	
-	jsr	vwait
 
 	
 
 ;;; draw item
-	jsr	vwait
 
 	lda	#$3f
 	sta	$2006
@@ -108,27 +101,15 @@ start2:
 
 	.include "palettes.asm"	
 		
-	jsr	vwait
-	jsr	vwait
-
-
+	mov	#12, level_num
 	jsr	choose_level
 	
-	jsr	vwait
-	
-ppu_on:	
-	debug_p ds_ppu
-	jsr	vwait
-	lda	#%10000000
- 	sta	$2000	
-	jsr	vwait
-	lda	#%00011110
- 	sta	$2001
+;;; ppu on
+	jsr	ppu_on
 	
 	
 main_loop:
 	jsr	handle_joy
-	jsr	vwait
 	jmp	main_loop
 
 	
@@ -192,8 +173,6 @@ choose_level:
 .go:	
 	jsr	load_level
 	jsr	draw_guy
-
-	jsr	vwait
 	jsr	draw_level
 
 	rts
@@ -268,7 +247,8 @@ sample_level12:
 
 ds_begin .db	"begin",0
 ds1:	.db	"rledecode",0
-ds_ppu:	.db	"ppu_on",0
+ds_ppu_off:	.db "ppu_off",0
+ds_ppu_on:	.db	"ppu_on",0
 ds_run:	.db	"run",0
 ds_antirun:	.db	"arun",0
 ds_nmi:	.db	"nmi",0
@@ -278,7 +258,8 @@ ds_i:	.db	"i",0
 ds_tmpaddr:	.db	"tmp_addr",0
 ds_tiles:	.db	"tiles",0
 ds_draw_guy	.db	"draw_guy",0
-
+ds_load_level	.db	"load level",0
+ds_draw_level	.db	"draw level",0
 			
 ;;; vectors
 	.bank	3

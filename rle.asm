@@ -5,11 +5,11 @@ bytes	.equ tmp_3
 char	.equ tmp_4
 
 	debug_p	ds1
-	debug_p ds_tmpaddr
+; 	debug_p ds_tmpaddr
 	lda	tmp_addr
-	sta	debug_num
+; 	sta	debug_num
 	lda	tmp_addr+1
-	sta	debug_num
+; 	sta	debug_num
 	;; take idx16, read from it and advance it, and store
 	;; result in place pointed by tmp_addr
 	mov	#180, size	; size of map
@@ -28,7 +28,7 @@ char	.equ tmp_4
 	jmp	.anti_run	; if 0, anti-run
 .run:	
 	;; run
-	debug_p	ds_run
+; 	debug_p	ds_run
 	mov	#0, char	; set char to 0
 	lda	bytes		; check if bytes == 0
 	beq	.in_run_loop	; skip and write zeros if bytes == 0
@@ -36,8 +36,8 @@ char	.equ tmp_4
 	mov	[idx16], Y, char ; read a char, since bytes != 0
 	inc16	idx16
 .in_run_loop:
-	debug_p	ds_x
-	stx	debug_num
+; 	debug_p	ds_x
+; 	stx	debug_num
 	txa
 	tay
 	mov	char, [tmp_addr], Y ; write the content of the run
@@ -55,12 +55,12 @@ char	.equ tmp_4
 	jmp	.loop
 	
 .anti_run:
-	debug_p	ds_antirun
+; 	debug_p	ds_antirun
 	mov	[idx16], Y, run ; length of this anti-run
 	inc16	idx16
 .in_anti_run_loop:
 	lda	[idx16], Y
-	sta	debug_num
+; 	sta	debug_num
 	sta	char
 	txa
 	tay

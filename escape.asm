@@ -37,6 +37,9 @@ ty:	.ds	1
 td:	.ds	1
 ttx:	.ds	1
 tty:	.ds	1
+lx:	.ds	1
+ly:	.ds	1
+ld:	.ds	1
 newx:	.ds	1
 newy:	.ds	1
 newd:	.ds	1
@@ -53,7 +56,11 @@ pulsey:	.ds	1
 pulsed:	.ds	1
 landon:	.ds	1
 doswap:	.ds	1
-	
+
+is_dead:.ds	1
+is_won:	.ds	1
+end_sound_made: .ds	1
+		
 idx16:	.ds	2
 tmp:	.ds	1
 tmp_2:	.ds	1
@@ -157,8 +164,31 @@ start:	sei
 main_loop:
  	jsr	vwait
 	jsr	handle_joy
+	lda	is_dead
+	bne	.dead
+	lda	is_won
+	bne	.won
 	jmp	main_loop
 
+.dead:
+	lda	end_sound_made
+	bne	.no_laser_sound
+	jsr	make_laser_sound
+	lda	#1
+	sta	end_sound_made
+.no_laser_sound:	
+	jmp	main_loop
+
+.won:
+	lda	end_sound_made
+	bne	.no_exit_sound
+	jsr	make_exit_sound
+	lda	#1
+	sta	end_sound_made
+.no_exit_sound:	
+	jmp	main_loop
+
+	
 	
 choose_level:
 	lda	level_num
@@ -278,7 +308,7 @@ levels:
 sample_level01:	
 	.incbin "levels/test1.esx"		
 sample_level02:	
-	.incbin "levels/tutor01.esx"		
+	.incbin "levels/lev130.esx"		
 sample_level03:	
 	.incbin "levels/tutor03.esx"		
 sample_level04:	

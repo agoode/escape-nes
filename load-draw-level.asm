@@ -1,6 +1,12 @@
 load_level:
 	debug_p ds_load_level
 	jsr	mask_nmi
+
+	lda	#0
+	sta	x_scroll
+	sta	is_dead
+	sta	is_won
+	sta	end_sound_made
 	
 	mov	#0, tmp_size+1
 	mov	#dir_down, gd

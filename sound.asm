@@ -166,4 +166,45 @@ make_pulse_sound:
 	lda	#%00010001
 	sta	$4003
 	rts
+
+
+make_laser_sound:
+	;; sq1
+	lda	#%01011111
+	sta	$4000
 	
+	lda	#%10000100
+	sta	$4001
+
+	lda	#%01000000
+	sta	$4002
+
+	lda	#%00001000
+	sta	$4003
+
+	;; noise
+	lda	#%00001111
+	sta	$400C
+	lda	#%10001111
+	sta	$400E
+	lda	#%00001000
+	sta	$400F
+	
+	rts
+
+
+make_exit_sound:
+	;; sq1
+	lda	#%10001111
+	sta	$4000
+
+	lda	#%11111010
+	sta	$4001
+
+	lda	#%11111110
+	sta	$4002
+
+	lda	#%00001111
+	sta	$4003
+
+	rts

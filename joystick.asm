@@ -6,7 +6,25 @@ j_up:		.equ	%00010000
 j_down:		.equ	%00100000
 j_left:		.equ	%01000000
 j_right:	.equ	%10000000
+
 	
+perform_actions: .macro
+	lda	is_dead
+	bne	.do_nothing\@
+	lda	is_won
+	bne	.do_nothing\@
+	
+	jsr	mask_nmi
+
+	jsr	do_move
+	jsr	draw_guy
+	jsr	set_end_states
+	
+	jsr	ppu_on
+
+.do_nothing\@:	
+	.endm
+		
 handle_joy:
 	;; don't do it if drawing
 	lda	num_tiles_changed
@@ -100,53 +118,49 @@ handle_joy:
 	and	#j_right
 	beq	.act1
 	mov	#dir_right,newd
-
-	;; expensive work ahead
-	jsr	mask_nmi
-	
-	jsr	do_move
-	jsr	draw_guy
-	jsr	ppu_on
+	perform_actions
 
 .act1:	lda	last_joy_state
 	and	#j_left
 	beq	.act2
 	mov	#dir_left,newd
-
-	;; expensive work ahead
-	jsr	mask_nmi
-	
-	jsr	do_move
-	jsr	draw_guy
-	jsr	ppu_on
+	perform_actions
 
 .act2:	lda	last_joy_state
 	and	#j_down
 	beq	.act3
 	mov	#dir_down,newd
-
-	;; expensive work ahead
-	jsr	mask_nmi
-	
-	jsr	do_move
-	jsr	draw_guy
-	jsr	ppu_on
+	perform_actions
 
 .act3:	lda	last_joy_state
 	and	#j_up
 	beq	.act4
 	mov	#dir_up,newd
-
-	;; expensive work ahead
-	jsr	mask_nmi
-	
-	jsr	do_move
-	jsr	draw_guy
-	jsr	ppu_on
+	perform_actions
 
 .act4:	lda	last_joy_state
 	and	#j_start
 	beq	.act5
+	lda	is_won		; only advance if won
+	beq	.not_won
+	jsr	go_to_next_level
+.not_won:	
+	jsr	choose_level
+	
+.act5:	lda	last_joy_state
+	and	#j_select
+	beq	.act6
+	jsr	go_to_next_level
+	jsr	choose_level
+
+.act6
+.done:
+	lda	cur_joy_state
+	sta	last_joy_state
+	rts
+
+
+go_to_next_level:
 	lda	level_num
 	clc
 	adc	#1
@@ -155,11 +169,5 @@ handle_joy:
 	lda	#1		; reset
 .level_set:	
 	sta	level_num
-	jsr	choose_level
-	
-.act5:	
-.done:
-	lda	cur_joy_state
-	sta	last_joy_state
-	rts
 
+	rts

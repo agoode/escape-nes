@@ -314,6 +314,7 @@ swapo:
 	jsr	update_tile_buffer
 
 	;; crazy stuff
+	ldx	tile_pos
 	lda	flags,X
 	tay			; save
 
@@ -324,7 +325,7 @@ swapo:
 	;; swap panel bits
 	tya
 	and	#TF_HASPANEL	; if haspanel, set opanel (in parallel!)
-	bne	.next1
+	beq	.next1
 	lda	tmp
 	ora	#TF_OPANEL
 	sta	tmp
@@ -332,7 +333,7 @@ swapo:
 .next1:
 	tya
 	and	#TF_OPANEL	; if opanel, set haspanel
-	bne	.next2
+	beq	.next2
 	lda	tmp
 	ora	#TF_HASPANEL
 	sta	tmp
@@ -340,7 +341,7 @@ swapo:
 .next2:	
 	tya
 	and	#TF_RPANELL
-	bne	.next3
+	beq	.next3
 	lda	tmp
 	ora	#TF_ROPANELL
 	sta	tmp
@@ -348,7 +349,7 @@ swapo:
 .next3:	
 	tya
 	and	#TF_RPANELH
-	bne	.next4
+	beq	.next4
 	lda	tmp
 	ora	#TF_ROPANELH
 	sta	tmp
@@ -356,7 +357,7 @@ swapo:
 .next4:	
 	tya
 	and	#TF_ROPANELL
-	bne	.next5
+	beq	.next5
 	lda	tmp
 	ora	#TF_RPANELL
 	sta	tmp
@@ -364,7 +365,7 @@ swapo:
 .next5:	
 	tya
 	and	#TF_ROPANELH
-	bne	.next6
+	beq	.next6
 	lda	tmp
 	ora	#TF_RPANELH
 	sta	tmp
@@ -1012,7 +1013,138 @@ send_pulse:
 .wend:	
 
 	rts
+
 	
+set_end_states:
+	;; dead or won?
+	lda	#0
+	sta	is_dead
+	sta	is_won
+
+	;; check lasers
+	mov	#dir_up, ld
+	jsr	.laser_helper
+	lda	is_dead
+	bne	.dead
+	
+	mov	#dir_down, ld
+	jsr	.laser_helper
+	lda	is_dead
+	bne	.dead
+
+	mov	#dir_left, ld
+	jsr	.laser_helper
+	lda	is_dead
+	bne	.dead
+
+	mov	#dir_right, ld
+	jsr	.laser_helper
+	lda	is_dead
+	bne	.dead
+
+	;; check for win
+	tileat	gx,gy
+	cmp	#T_EXIT
+	beq	.won
+
+	rts
+	
+.won:
+	lda	#1
+	sta	is_won
+	rts
+
+.dead:	
+	rts
+
+
+.laser_helper:	
+	lda	gx
+	sta	lx
+	lda	gy
+	sta	ly
+
+.while:	travel	lx,ly,ld,lx,ly
+	beq	.not_dead
+	tileat	lx,ly
+	cmp	#T_LASER
+	bne	.not_laser
+
+	;; Zap.
+	lda	ld
+	jsr	dir_reverse
+	sta	ld
+	lda	#1
+	sta	is_dead
+	rts
+	
+.not_laser:
+	;; tileat still in A
+	cmp	#T_FLOOR
+	beq	.while
+	cmp	#T_ELECTRIC
+	beq	.while
+	cmp	#T_ROUGH
+	beq	.while
+	cmp	#T_RDOWN
+	beq	.while
+	cmp	#T_GDOWN
+	beq	.while
+	cmp	#T_BDOWN
+	beq	.while
+	cmp	#T_TRAP2
+	beq	.while
+	cmp	#T_TRAP1
+	beq	.while
+	cmp	#T_PANEL
+	beq	.while
+	cmp	#T_BPANEL
+	beq	.while
+	cmp	#T_GPANEL
+	beq	.while
+	cmp	#T_RPANEL
+	beq	.while
+	cmp	#T_BLACK
+	bne	.not_black
+	jmp	.while
+.not_black:	
+	cmp	#T_HOLE
+	bne	.not_hole
+	jmp	.while
+
+.not_hole:	
+.not_dead:
+	lda	#0
+	sta	is_dead
+	rts
+		
+
+
+dir_reverse:
+	cmp	#dir_up
+	beq	.down
+	cmp	#dir_down
+	beq	.up
+	cmp	#dir_left
+	beq	.right
+
+	;; must be left
+.left:	
+	lda	#dir_left
+	rts
+
+.right:	
+	lda	#dir_right
+	rts
+
+.up:	
+	lda	#dir_up
+	rts
+
+.down:	
+	lda	#dir_down
+	rts
+
 
 step_table:
 		;; 0-15

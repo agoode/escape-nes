@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
 use strict;
+use bytes;
 $| = 1;
 
 my $max_title = 0;
@@ -8,10 +9,11 @@ my $max_author = 0;
 my $max_sw = 0;
 my $max_sh = 0;
 my %chars;
+my $name;
 
 while ($_ = shift) {
   open IN, $_ or die "Can't open $_: $!";
-  my $name = $_;
+  $name = $_;
 
   my $buf;
 
@@ -23,6 +25,13 @@ while ($_ = shift) {
   read IN, $buf, 12;
 
   my ($sw, $sh, $size) = unpack "NNN", $buf;
+  if ($sw > 18 || $sh > 10) {
+    print "$name dimensions too big for NES version ($sw,$sh)\n";
+    next;
+  }
+  if ($sw < 18 || $sh < 10) {
+    print "$name needs padding to work on NES ($sw,$sh) < (18,10)\n";
+  }
   $max_sw = $sw if $sw > $max_sw;
   $max_sh = $sh if $sh > $max_sh;
 
@@ -88,7 +97,7 @@ sub rledecode {
   read IN, $buf, 1;
   my $bytes = unpack "C", $buf;
   if ($bytes > 1) {
-    die "Bad file bytecount: $bytes\n";
+    die "Bad file bytecount: $bytes in $name\n";
   }
 
   my $run;

@@ -222,7 +222,31 @@ checkleavepanel_func:
 	rts
 .swap:
 	jmp	swapo
-	
+
+
+issphere:	.macro
+	ldx	\1
+	ldy	\2
+	jsr	issphere_func
+	.endm
+
+issphere_func:
+	jsr	tileat_func
+	cmp	#T_SPHERE
+	beq	.yes
+	cmp	#T_BSPHERE
+	beq	.yes
+	cmp	#T_GSPHERE
+	beq	.yes
+	cmp	#T_RSPHERE
+	beq	.yes
+
+	;; no
+	lda	#0
+	rts
+.yes:	lda	#1
+	rts
+
 	
 realpanel:
 	tax			; save the flag
@@ -255,8 +279,78 @@ realpanel:
 
 
 swapo:
+	;; index in A
+	tax
+	lda	tiles,X
+	tay
+	lda	otiles,X
+	sta	tiles,X
+	tya
+	sta	otiles,X
+
+	;; crazy stuff
+	lda	flags,X
+	tay			; save
+
+	;; erase old flags
+	and	#~(TF_HASPANEL | TF_OPANEL | TF_RPANELL  | TF_RPANELH |  TF_ROPANELL | TF_ROPANELH)
+	sta	tmp
+
+	;; swap panel bits
+	tya
+	and	#TF_HASPANEL	; if haspanel, set opanel (in parallel!)
+	bne	.next1
+	lda	tmp
+	ora	#TF_OPANEL
+	sta	tmp
+
+.next1:
+	tya
+	and	#TF_OPANEL	; if opanel, set haspanel
+	bne	.next2
+	lda	tmp
+	ora	#TF_HASPANEL
+	sta	tmp
+
+.next2:	
+	tya
+	and	#TF_RPANELL
+	bne	.next3
+	lda	tmp
+	ora	#TF_ROPANELL
+	sta	tmp
+
+.next3:	
+	tya
+	and	#TF_RPANELH
+	bne	.next4
+	lda	tmp
+	ora	#TF_ROPANELH
+	sta	tmp
 	
+.next4:	
+	tya
+	and	#TF_ROPANELL
+	bne	.next5
+	lda	tmp
+	ora	#TF_RPANELL
+	sta	tmp
+	
+.next5:	
+	tya
+	and	#TF_ROPANELH
+	bne	.next6
+	lda	tmp
+	ora	#TF_RPANELH
+	sta	tmp
+	
+.next6:	
+	;; finally, set!
+	lda	tmp
+	sta	flags,X
 	rts
+
+
 
 
 do_move:
@@ -487,13 +581,228 @@ electric_off:
 .done:
 	jmp	make_electric_off_sound
 	
+
 no_move:
 	debug_p	ds_no_move
 	jmp	make_no_move_sound
 
-slide_push:
-	rts
 
+slide_push:
+	debug_p ds_slide_push
+.while:	
+	issphere newx,newy
+	beq	.wend
+	travel	newx,newy,newd,tnx,tny
+	beq	.wend
+	issphere tnx,tny
+	beq	.wend
+
+	debug_p	ds_sphere_sliding
+	mov	tnx,newx
+	mov	tny,newy
+	tileat	tnx,tny
+	sta	target
+		
+.wend:	
+	mov	newx,goldx
+	mov	newy,goldy
+
+	;; remove gold block
+	flagat	goldx,goldy
+	and	#TF_HASPANEL
+	beq	.not_panel
+
+	;; set replacement to be panel
+	flagat	goldx,goldy
+	jsr	realpanel
+	sta	new_tile
+	ldx	goldx
+	ldy	goldy
+	jsr	settile_func
+	jmp	.next1
+
+.not_panel:
+	;; replace with floor
+	settile goldx,goldy,#T_FLOOR
+
+.next1:
+.while2:	
+	travel	goldx,goldy,newd,tgoldx,tgoldy
+	bne	.slide_block
+	jmp	.wend2
+
+.slide_block:	
+	debug_p	ds_block_sliding
+	tileat	tgoldx,tgoldy
+	cmp	#T_ELECTRIC
+	beq	.no_while2_break
+
+	cmp	#T_PANEL
+	beq	.no_while2_break
+
+	cmp	#T_BPANEL
+	beq	.no_while2_break
+
+	cmp	#T_RPANEL
+	beq	.no_while2_break
+
+	cmp	#T_GPANEL
+	beq	.no_while2_break
+
+	cmp	#T_FLOOR
+	beq	.no_while2_break
+
+	jmp	.wend2
+
+.no_while2_break:	
+	
+	ldx	tgoldx
+	stx	goldx
+	ldy	tgoldy
+	sty	goldy
+
+	cmp	#T_ELECTRIC
+	beq	.wend2
+
+	jmp	.while2
+
+.wend2:
+	;; goldx is dest, newx is source
+	lda	goldx
+	cmp	newx
+	bne	.next2
+	lda	goldy
+	cmp	newy
+	bne	.next2
+
+	;; else, didn't move, put it back
+	settile	newx,newy,target
+	jmp	no_move
+
+
+.next2:
+	tileat	goldx,goldy
+	sta	landon
+	lda	#0
+	sta	doswap
+
+	;; untrigger from source
+	flagat	newx,newy
+	tax
+	and	#TF_HASPANEL
+	bne	.next3
+	txa
+	jsr	realpanel
+	cmp	#T_PANEL	; if panel, do swap, or if the sphere matches
+	beq	.set_doswap
+
+	tax
+	lda	target
+	cmp	#T_GSPHERE
+	beq	.gsphere
+
+	cmp	#T_RSPHERE
+	beq	.rsphere
+
+	cmp	#T_BSPHERE
+	beq	.bsphere
+
+	jmp	.next3
+
+.gsphere:
+	txa
+	cmp	#T_GPANEL
+	beq	.set_doswap
+	jmp	.next3
+
+.rsphere:	
+	txa
+	cmp	#T_RPANEL
+	beq	.set_doswap
+	jmp	.next3
+
+.bsphere:	
+	txa
+	cmp	#T_BPANEL
+	beq	.set_doswap
+	jmp	.next3
+	
+
+.set_doswap:
+	mov	#1,doswap
+
+.next3:
+	lda	landon
+
+	;; only the correct color sphere can trigger the colored panels
+	cmp	#T_GPANEL
+	beq	.gsphere2
+
+	cmp	#T_BPANEL
+	beq	.bsphere2
+
+	cmp	#T_RPANEL
+	beq	.rsphere2
+
+	cmp	#T_PANEL
+	beq	.do_gold_swapo
+
+	jmp	.next4
+
+.gsphere2:
+	lda	target
+	cmp	#T_GSPHERE
+	beq	.do_gold_swapo
+
+	jmp	.next4
+
+.bsphere2:
+	lda	target
+	cmp	#T_BSPHERE
+	beq	.do_gold_swapo
+
+	jmp	.next4
+
+.rsphere2:
+	lda	target
+	cmp	#T_RSPHERE
+	beq	.do_gold_swapo
+
+	jmp	.next4
+	
+	
+.do_gold_swapo:
+	destat	goldx,goldy
+	jsr	swapo
+
+.next4:
+	settile	goldx,goldy,target
+
+	lda	landon
+	cmp	#T_ELECTRIC
+	bne	.next5
+
+	;; gold is zapped, cover some corner case too
+	settile	goldx,goldy,#T_ELECTRIC
+	jsr	make_zap_sound
+	
+
+.next5:	
+	lda	doswap
+	bne	.no_swap
+
+	;; swap
+	destat	newx,newy
+	jsr	swapo
+	
+.no_swap:	
+	jsr	make_slide_sound
+	jmp	plain_move
+
+
+
+
+	
 transport_guy:
 	rts
 

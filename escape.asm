@@ -40,8 +40,15 @@ tty:	.ds	1
 newx:	.ds	1
 newy:	.ds	1
 newd:	.ds	1
+tnx:	.ds	1
+tny:	.ds	1
+goldx:	.ds	1
+goldy:	.ds	1
+tgoldx:	.ds	1
+tgoldy:	.ds	1	
 destx:	.ds	1
 desty:	.ds	1
+landon:	.ds	1
 doswap:	.ds	1
 	
 idx16:	.ds	2
@@ -323,6 +330,15 @@ ds_plain_move	.db	"plain_move",0
 ds_no_move	.db	"no_move",0
 ds_tiles_changed .db	"tiles changed",0
 ds_electric_off	.db	"turning electric off",0
+ds_slide_push	.db	"slide push",0
+ds_sphere_sliding .db	"sliding sphere...",0
+ds_block_sliding .db	"sliding block...",0
+ds_not_electric	.db	"not electric",0
+ds_not_panel	.db	"not panel",0
+ds_not_bpanel	.db	"not bpanel",0
+ds_not_rpanel	.db	"not rpanel",0
+ds_not_gpanel	.db	"not gpanel",0
+ds_not_floor	.db	"not floor",0
 	
 	.endif
 									

@@ -119,3 +119,18 @@ make_swap_sound:
 	sta	$4003
 	
 	rts
+
+
+make_slide_sound:
+	;; noise
+	lda	#%00000011
+	sta	$400C
+
+	lda	#%00000011
+	sta	$400E
+
+	lda	#%00001000
+	sta	$400F
+	
+	rts
+	

@@ -250,7 +250,8 @@ init_sprite_memory:
 
 
 levels:	
-	.dw sample_level01, \
+	.dw title_level, \
+	    sample_level01, \
 	    sample_level02, \
 	    sample_level03, \
 	    sample_level04, \
@@ -279,6 +280,8 @@ levels:
 	    lev85, \
 	    lev140
 
+title_level:
+	.incbin "levels/title.esx"
 sample_level01:	
    	.incbin "levels/tutor01.esx"		
 sample_level02:	

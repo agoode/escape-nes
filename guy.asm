@@ -5,14 +5,16 @@ update_scroll_from_guy:
 	
 	lda	gx
 	debug_num
-	cmp	#12
-	beq	.scroll1_if_scroll0
-	bpl	.scroll2
-
-	cmp	#5
+	cmp	#2
 	bmi	.scroll0
-	beq	.scroll1_if_scroll2
-	rts
+
+	cmp	#9
+	bmi	.scroll1
+
+	cmp	#16
+ 	bmi	.scroll2
+
+	jmp	.scroll3
 
 
 .scroll1_if_scroll0:
@@ -31,13 +33,16 @@ update_scroll_from_guy:
 	rts
 
 	
-.scroll1:
-	mov	#16,x_scroll
-	rts
 .scroll0:	
 	mov	#0,x_scroll
 	rts	
+.scroll1:
+	mov	#8,x_scroll
+	rts
 .scroll2:
+	mov	#24,x_scroll	
+	rts
+.scroll3:
 	mov	#32,x_scroll	
 	rts
 	

@@ -31,8 +31,8 @@ handle_joy:
 	lda	$4016
 	and	#%1
 	beq	.b
-	;lda	#j_a
- 	;ora	cur_joy_state
+	lda	#j_a
+ 	ora	cur_joy_state
 	sta	cur_joy_state
 		
 .b:	
@@ -138,7 +138,13 @@ handle_joy:
 	jsr	handle_select
 	jmp	.done
 
-.act6:	
+.act6:
+	lda	last_joy_state
+	and	#j_a
+	beq	.act7
+	jsr	handle_a
+	jmp	.done
+.act7:	
 .done:
 	lda	cur_joy_state
 	sta	last_joy_state
@@ -158,11 +164,7 @@ go_to_next_level:
 	rts
 
 
-handle_start:
-	lda	is_won		; only advance if won
-	beq	.not_won
-	jsr	go_to_next_level
-.not_won:	
+handle_start:			; restart
 	jsr	choose_level
 
 	rts
@@ -172,6 +174,21 @@ handle_select:
 	jsr	choose_level
 
 	rts
+
+handle_a:
+	lda	is_won		; only advance if won
+	beq	.not_won
+	jsr	go_to_next_level
+	jsr	choose_level
+	
+.not_won:
+	lda	is_dead
+	beq	.not_dead
+	jsr	choose_level	; reset if dead
+
+.not_dead:
+	rts
+
 
 
 handle_direction:

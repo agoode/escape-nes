@@ -67,6 +67,7 @@ safe_to_draw:	.ds	1
 cur_joy_state:	.ds	1
 last_joy_state:	.ds	1
 tiles_drawn:	.ds	1
+drawing_limit:	.ds	1
 				
 	.bss
 
@@ -109,20 +110,22 @@ nmi_finished:	.ds	1
 		
 start:	sei
 
-	mov	#0,safe_to_draw
+	lda	#0
+	sta	safe_to_draw
+	sta	last_joy_state
+	sta	num_tiles_changed
 	
 	jsr	vwait	
 	jsr	ppu_off
 	jsr	init_sprite_memory
 
-	mov	#0,last_joy_state
 		
 	debug_p	ds_begin
 	
 	jsr	vwait	
 	jsr	vwait
 
-	jsr	zero_ppu_memory	
+	jsr	zero_ppu_memory
 
 ;;; draw item
 

@@ -1,6 +1,8 @@
 load_level:
 	debug_p ds_load_level
 	mov	#0,safe_to_draw
+ 	jsr	zero_ppu_memory
+	
 	mov	#0, tmp_size+1
 	mov	#dir_down, gd
 
@@ -82,8 +84,6 @@ load_level:
 		
 	
 draw_level:
-; 	jsr	ppu_off
-; 	jsr	zero_ppu_memory
 ;	debug_p ds_draw_level
 	;; assumes load_level just called
 
@@ -100,7 +100,12 @@ draw_level:
 	jmp	.loop
 
 .done:
-;	jsr	ppu_on
+  	jsr	ppu_off
+ 	lda	#180
+ 	sta	drawing_limit
+;   	jsr	copy_some_tiles_to_ppu
+
+ 	jsr	ppu_on
 	rts
 
 
@@ -139,8 +144,6 @@ update_tile_buffer:
 	lda	attr_buffer, Y
 	tax
 
-	;; get the PPU address for nametable spot
-	add16	screen_pos, #$20C0
 
 	;; x now has the existing attribute table entry
 	;; and y has the offset into the attr_buffer
@@ -197,7 +200,9 @@ update_tile_buffer:
 	sta	attr_buffer, Y
 	
 
-.done:	
+.done:
+;	lda	#%00011011
+; 	sta	attr_buffer, Y
 	rts
 
 
@@ -213,18 +218,19 @@ copy_some_tiles_to_ppu:
 
 .draw_loop:
 	lda	tiles_drawn
-	cmp	#4
+	cmp	drawing_limit
 	bne	.continue
 	rts
 	
 .continue:
 	;; figure out the tile
 	ldx	num_tiles_changed
-	stx	debug_port
+;	stx	debug_port
 	dex
 	lda	tiles_changed, X
+	sta	tile_pos
 	tax
-	stx	debug_port
+;	stx	debug_port
 	mov	tile_pos_table_2, X, screen_pos+1
 	mov	tile_pos_table_1, X, screen_pos
 
@@ -234,13 +240,17 @@ copy_some_tiles_to_ppu:
 	lda	tile_name_table, X
 	sta	tile
 
-	
 	;; load attribute table buffer entry
-	tax
+	ldx	tile_pos
 	lda	tile_index_to_attr_buffer, X
-	tay
-	lda	attr_buffer, Y
 	tax
+	lda	attr_buffer, X
+	tay
+
+	mov	attr_pos_table_2, X, $2006
+	mov	attr_pos_table_1, X, $2006
+	sty	$2007
+
 	
 .update_tile:
 	;; actually write into the nametable (2x2 tiles)
@@ -251,11 +261,11 @@ copy_some_tiles_to_ppu:
 	lda	tile
 	sta	$2007		; update the tile
 
-	add16	screen_pos, #1	; next part (right)
-	lda	screen_pos+1
-	sta	$2006
-	lda	screen_pos
-	sta	$2006
+;	add16	screen_pos, #1	; next part (right)
+;	lda	screen_pos+1
+; 	sta	$2006
+; 	lda	screen_pos
+; 	sta	$2006
 	inc	tile
 	lda	tile
 	sta	$2007		; update the tile
@@ -267,19 +277,21 @@ copy_some_tiles_to_ppu:
 	sta	$2006
 	lda	tile
 	clc
-	adc	#$10
+	adc	#$0F
 	sta	tile
 	sta	$2007		; update the tile
 
-	add16	screen_pos, #$FFFF	; last part (left)
-	lda	screen_pos+1
-	sta	$2006
-	lda	screen_pos
-	sta	$2006
-	dec	tile
+; 	add16	screen_pos, #$FFFF	; last part (left)
+; 	lda	screen_pos+1
+; 	sta	$2006
+; 	lda	screen_pos
+; 	sta	$2006
+	inc	tile
 	lda	tile
 	sta	$2007		; update the tile
 
+
+	
 
 
 	dec	num_tiles_changed

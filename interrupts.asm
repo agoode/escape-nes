@@ -23,6 +23,8 @@ nmi:
 .no_dma:
 	lda	safe_to_draw
 	beq	.done
+	lda	#6
+	sta	drawing_limit
 	jsr	copy_some_tiles_to_ppu
 	
 	

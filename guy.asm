@@ -61,7 +61,7 @@ draw_guy:
 	asl	a
 	asl	a
 	clc
-	adc	#$2F
+	adc	#$3F
 	tay	
 
 	lda	gd

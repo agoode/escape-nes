@@ -56,7 +56,9 @@ tmp_size: .ds	2
 tmp_addr: .ds	2
 
 screen_pos:	.ds	2
-nmi_tmp:	.ds	1
+
+swap_tile_1:	.ds	1
+swap_tile_2:	.ds	1
 
 x_scroll: .ds	1
 	

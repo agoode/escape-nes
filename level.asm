@@ -154,7 +154,45 @@ settile_func:
 	sta	tiles, X
 	jmp	update_tile_buffer
 	
+swaptiles:	.macro
+	mov	\1,swap_tile_1
+	mov	\2,swap_tile_2
+	jsr	swaptiles_func
+	.endm
 
+swaptiles_func:
+	ldx	#180
+.loop:
+	dex
+	beq	.done
+
+	lda	tiles, X
+
+	cmp	swap_tile_1
+	beq	.update1
+
+	cmp	swap_tile_2
+	beq	.update2
+
+	jmp	.loop
+
+.update1:
+	lda	swap_tile_2
+	jmp	.update
+.update2:
+	lda	swap_tile_1
+.update:	
+	sta	tiles, X
+	stx	tile_pos
+	jsr	update_tile_buffer
+	ldx	tile_pos
+	jmp	.loop
+
+.done:
+	rts
+	
+
+	
 checkstepoff:	.macro
 	ldx	\1
 	ldy	\2
@@ -468,7 +506,14 @@ break_block:
 	settile newx,newy,#T_FLOOR
 	jmp	make_break_sound
 
-t_0_t_1_hit:
+t_0_hit:
+	swaptiles #T_UD,#T_LR
+	settile	newx,newy,#T_1
+	rts
+
+t_1_hit:
+	swaptiles #T_UD,#T_LR
+	settile	newx,newy,#T_0
 	rts
 
 send_pulse:
@@ -502,8 +547,8 @@ step_table:
 	.dw	break_block	; T_BROKEN	
 	.dw	push_block	; T_LR		
 	.dw	push_block	; T_UD		
-	.dw	t_0_t_1_hit	; T_0		
-	.dw	t_0_t_1_hit	; T_1		
+	.dw	t_0_hit		; T_0		
+	.dw	t_1_hit		; T_1		
 	.dw	push_block	; T_NS		
 	.dw	push_block	; T_NE		
 	.dw	push_block	; T_NW		

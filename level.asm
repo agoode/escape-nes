@@ -636,6 +636,7 @@ slide_push:
 	mov	tny,newy
 	tileat	tnx,tny
 	sta	target
+	debug_num
 	jmp	.while
 		
 .wend:	
@@ -711,7 +712,7 @@ slide_push:
 	bne	.next2
 
 	;; else, didn't move, put it back
-	settile	newx,newy,target
+ 	settile	newx,newy,target
 	jmp	no_move
 
 

@@ -276,9 +276,9 @@ levels:
 	    sample_level12
 
 sample_level01:	
-	.incbin "levels/tutor01.esx"		
+	.incbin "levels/test1.esx"		
 sample_level02:	
-	.incbin "levels/tutor02.esx"		
+	.incbin "levels/tutor01.esx"		
 sample_level03:	
 	.incbin "levels/tutor03.esx"		
 sample_level04:	

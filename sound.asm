@@ -153,6 +153,17 @@ make_transport_sound:
 
 
 make_pulse_sound:
+	;; sq1
+	lda	#%10000001
+	sta	$4000
 
+	lda	#%11001010
+	sta	$4001
+
+	lda	#%10000010
+	sta	$4002
+
+	lda	#%00010001
+	sta	$4003
 	rts
 	

@@ -148,7 +148,7 @@ update_tile_buffer:
 .skip_update:	
 	
 	;; load attribute table buffer entry
-	tax
+	ldx	tile_pos
 	lda	tile_index_to_attr_buffer, X
 	tay
 	lda	attr_buffer, Y

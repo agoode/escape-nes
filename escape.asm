@@ -7,7 +7,7 @@
 ;;; items
 	.inesprg 2
 	.ineschr 1
-	.inesmir 3
+	.inesmir 1
 	.inesmap 4
 
 

@@ -98,11 +98,12 @@ draw_level:
 	jmp	.loop
 
 .done:
-   	jsr	ppu_off
-  	lda	#180
-  	sta	drawing_limit
-    	jsr	copy_some_tiles_to_ppu
-
+    	jsr	ppu_off
+   	lda	#180
+   	sta	drawing_limit
+      	jsr	copy_some_tiles_to_ppu
+	lda	#8
+	sta	drawing_limit
   	jsr	ppu_on
 	rts
 
@@ -210,7 +211,7 @@ copy_some_tiles_to_ppu:
 	sta	tiles_drawn
 
 .check_if_work:	
-	lda	num_tiles_changed
+	ldx	num_tiles_changed
 	bne	.draw_loop
 	rts
 
@@ -222,9 +223,10 @@ copy_some_tiles_to_ppu:
 	
 .continue:
 	;; figure out the tile
-	ldx	num_tiles_changed
+; 	ldx	num_tiles_changed
 ;	stx	debug_port
-	dex
+	dex			; already contains num_tiles_changed
+	stx	num_tiles_changed ; store decremented value
 	lda	tiles_changed, X
 	sta	tile_pos
 	tax
@@ -292,7 +294,7 @@ copy_some_tiles_to_ppu:
 	
 
 
-	dec	num_tiles_changed
+; 	dec	num_tiles_changed
 	inc	tiles_drawn
 	jmp	.check_if_work
 .done:

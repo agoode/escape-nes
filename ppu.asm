@@ -1,5 +1,5 @@
 ppu_on:
-	debug_p	ds_ppu_on
+; 	debug_p	ds_ppu_on
 	lda	#%10000000
  	sta	$2000	
 ; 	lda	#%00011110
@@ -8,7 +8,7 @@ ppu_on:
 	rts
 
 ppu_off:
-	debug_p ds_ppu_off
+; 	debug_p ds_ppu_off
 	lda	#0
 	sta	$2000
 	sta	$2001

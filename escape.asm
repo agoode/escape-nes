@@ -113,11 +113,9 @@ start:	sei
 	sta	last_joy_state
 	sta	num_tiles_changed
 	
-	jsr	vwait	
 	jsr	ppu_off
 	jsr	init_sprite_memory
 
-		
 	debug_p	ds_begin
 	
 	jsr	vwait	
@@ -218,16 +216,16 @@ choose_level:
 
 	
 vwait:
-	mov	#1,vwait_expected
-	mov	#0,nmi_finished
+; 	mov	#1,vwait_expected
+; 	mov	#0,nmi_finished
 .vwait_in:
 	lda	$2002
 	bpl	.vwait_in
 
-	lda	nmi_finished
-	bne	.ok
-	debug_p ds_nmi_not_fired	
-.ok:	
+; 	lda	nmi_finished
+; 	bne	.ok
+; 	debug_p ds_nmi_not_fired	
+; .ok:	
 	rts
 
 

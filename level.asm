@@ -178,14 +178,14 @@ checkstepoff_func:
 
 .t_hole:	
 	mov	#T_HOLE,new_tile
-	rts
+	jmp	settile_func
 .t_trap1
 	mov	#T_TRAP1,new_tile
-	rts
-	
+	jmp	settile_func
+
 
 checkleavepanel_func:
-	jsr	tileat
+	jsr	tileat_func
 	cmp	#T_PANEL
 	beq	.swap
 	rts
@@ -253,6 +253,7 @@ step_table_target .equ tmp16
 panel_step:	
 plain_move:
 	debug_p	ds_plain_move
+	checkstepoff	gx,gy	
 	lda	doswap
 	beq	.noswap
 	jsr	swapo
@@ -262,8 +263,7 @@ plain_move:
 	debug_num
 	mov	newy,gy
 	debug_num
-	jsr	update_scroll_from_guy
-	rts
+	jmp	update_scroll_from_guy
 
 	
 push_block:

@@ -65,22 +65,27 @@ update_scroll_from_guy:
 	debug_p	ds_update_scroll
 	
 	lda	gx
-	cmp	#13
-	bpl	.scroll2
+	sta	debug_num
+	cmp	#11
 	beq	.scroll1_if_scroll0
+	bpl	.scroll2
 
-	cmp	#4
+	cmp	#6
 	bmi	.scroll0
 	beq	.scroll1_if_scroll2
+	rts
 
 
 .scroll1_if_scroll0:
+	debug_p	ds_s1_s0
 	lda	x_scroll
-	cmp	#0
+	sta	debug_num
+	;cmp	#0
 	beq	.scroll1
 	rts
 
 .scroll1_if_scroll2:
+	debug_p ds_s1_s2
 	lda	x_scroll
 	cmp	#32
 	beq	.scroll1

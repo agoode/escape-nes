@@ -110,10 +110,24 @@ handle_joy:
 
 .act3:	lda	last_joy_state
 	and	#j_up
-	beq	.done
+	beq	.act4
 	jsr	move_guy_up
 	jsr	draw_guy
 
+.act4:	lda	last_joy_state
+	and	#j_start
+	beq	.act5
+	lda	level_num
+	clc
+	adc	#1
+	cmp	#13
+	bne	.level_set
+	lda	#1		; reset
+.level_set:	
+	sta	level_num
+	jsr	choose_level
+	
+.act5:	
 .done:
 	lda	cur_joy_state
 	sta	last_joy_state

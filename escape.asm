@@ -102,7 +102,7 @@ start:	sei
 
 	.include "palettes.asm"	
 		
-	mov	#8, level_num
+	mov	#1, level_num
 	jsr	choose_level
 	
 ;;; ppu on
@@ -274,7 +274,9 @@ ds_move_up	.db	"moving guy UP",0
 ds_move_left	.db	"moving guy LEFT",0
 ds_move_right	.db	"moving guy RIGHT",0
 ds_move_down	.db	"moving guy DOWN",0
-								
+ds_s1_s0	.db	"s0->s1?",0
+ds_s1_s2	.db	"s2->s1?",0
+									
 ;;; vectors
 	.bank	3
 	.org	$FFFA

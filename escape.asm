@@ -284,6 +284,8 @@ ds_s1_s0	.db	"s0->s1?",0
 ds_s1_s2	.db	"s2->s1?",0
 ds_tileat	.db	"tileat",0
 ds_xy_to_index	.db	"xy_to_index",0
+ds_plain_move	.db	"plain_move",0
+ds_no_move:	.db	"no_move",0
 	.endif
 									
 ;;; vectors

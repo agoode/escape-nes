@@ -1,6 +1,7 @@
 ;;; tiles, as defined in level.h
 	
 	.rsset $0
+	;; 0-15
 T_FLOOR		.rs 1
 T_RED		.rs 1
 T_BLUE		.rs 1
@@ -18,6 +19,7 @@ T_UP		.rs 1
 T_DOWN		.rs 1
 T_ROUGH		.rs 1
 
+	;; 16-31
 T_ELECTRIC	.rs 1
 T_ON		.rs 1
 T_OFF		.rs 1
@@ -35,6 +37,7 @@ T_SW		.rs 1
 T_WE		.rs 1
 T_BUTTON	.rs 1
 
+	;; 32-47
 T_BLIGHT	.rs 1
 T_RLIGHT	.rs 1
 T_GLIGHT	.rs 1
@@ -52,6 +55,7 @@ T_SPHERE	.rs 1
 T_TRAP2		.rs 1
 T_TRAP1		.rs 1
 
+	;; 48-50
 T_BPANEL	.rs 1
 T_RPANEL	.rs 1
 T_GPANEL	.rs 1

@@ -95,24 +95,28 @@ handle_joy:
 	beq	.act1
 	mov	#dir_right,newd
 	jsr	do_move
+	jsr	draw_guy
 
 .act1:	lda	last_joy_state
 	and	#j_left
 	beq	.act2
 	mov	#dir_left,newd
 	jsr	do_move
+	jsr	draw_guy
 
 .act2:	lda	last_joy_state
 	and	#j_down
 	beq	.act3
 	mov	#dir_down,newd
 	jsr	do_move
+	jsr	draw_guy
 
 .act3:	lda	last_joy_state
 	and	#j_up
 	beq	.act4
 	mov	#dir_up,newd
 	jsr	do_move
+	jsr	draw_guy
 
 .act4:	lda	last_joy_state
 	and	#j_start

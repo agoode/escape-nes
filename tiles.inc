@@ -60,6 +60,21 @@ T_BPANEL	.rs 1
 T_RPANEL	.rs 1
 T_GPANEL	.rs 1
 
+
+;;; flags, as defined in level.h
+TF_NONE		.equ 0
+
+TF_HASPANEL	.equ 1		; important
+TF_RPANELL	.equ 4		
+TF_RPANELH	.equ 8
+
+TF_OPANEL	.equ 2		; bizarro world
+TF_ROPANELL	.equ 16
+TF_ROPANELH	.equ 32		
+
+
+
+	
 letter_start:
 	.equ $A0
 laser_sprite_byte:

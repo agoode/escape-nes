@@ -19,7 +19,11 @@ debug_port:	.ds 1
 tile_pos: .ds	1
 tile:	.ds	2
 tiles:	.ds	180
+
+new_tile:	.ds	1
+	
 target:	.ds	1
+replacement:	.ds	1
 	
 level_num:	.ds	1
 		
@@ -29,9 +33,14 @@ gd:	.ds	1
 tx:	.ds	1
 ty:	.ds	1
 td:	.ds	1
+ttx:	.ds	1
+tty:	.ds	1
 newx:	.ds	1
 newy:	.ds	1
 newd:	.ds	1
+destx:	.ds	1
+desty:	.ds	1
+doswap:	.ds	1
 	
 idx16:	.ds	2
 tmp:	.ds	1

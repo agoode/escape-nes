@@ -9,9 +9,9 @@ travel:	.macro
 
 	jsr	travel_func
 
-	mov newx,\4
+	mov ttx,\4
 	debug_num
-	mov newy,\5
+	mov tty,\5
 	debug_num
 
 	pla
@@ -40,8 +40,8 @@ travel_func:
 
 	tax
 	dex
-	stx	newy
-	mov	tx,newx
+	stx	tty
+	mov	tx,ttx
 	jmp	.yes
 
 	
@@ -51,8 +51,8 @@ travel_func:
 
 	tax
 	inx
-	stx	newy
-	mov	tx,newx
+	stx	tty
+	mov	tx,ttx
 	jmp	.yes
 
 	
@@ -61,8 +61,8 @@ travel_func:
 
 	tax
 	dex
-	stx	newx
-	mov	ty,newy
+	stx	ttx
+	mov	ty,tty
 	jmp	.yes
 
 	
@@ -72,15 +72,15 @@ travel_func:
 
 	tax
 	inx
-	stx	newx
-	mov	ty,newy
+	stx	ttx
+	mov	ty,tty
 	jmp	.yes
 
 
 
 	
-.no:	mov tx,newx
-	mov ty,newy
+.no:	mov tx,ttx
+	mov ty,tty
 	lda	#0
 	rts
 .yes:	lda	#1
@@ -102,6 +102,32 @@ tileat_func:
 	debug_num
 	rts
 
+flagat:	.macro
+	ldx	\1
+	ldy	\2
+	jsr	flagat_func
+	.endm
+
+flagat_func:
+	jsr	xy_to_index
+	tay
+	mov16	#flags,tile
+	lda	[tile], Y
+	rts
+	
+destat:	.macro
+	ldx	\1
+	ldy	\2
+	jsr	destat_func
+	.endm
+
+destat_func:
+	jsr	xy_to_index
+	tay
+	mov16	#dests,tile
+	lda	[tile], Y
+	rts
+	
 
 xy_to_index:
 	debug_p	ds_xy_to_index
@@ -116,9 +142,61 @@ xy_to_index:
 	debug_num
 	rts
 
+settile: .macro
+	ldx	\1
+	ldy	\2
+	mov	\3,new_tile
+	jsr	settile_func
+	jsr	draw_level
+	.endm
+
+settile_func:	
+	jsr	xy_to_index
+	tay
+	mov16	#tiles,tile
+	lda	new_tile
+	sta	[tile], Y
+	rts
+
+	
+realpanel:
+	tax			; save the flag
+	and	#TF_RPANELH
+	beq	.not_rpanelh
+
+	txa
+	and	#TF_RPANELL
+	beq	.is_gpanel
+
+	lda	#T_RPANEL
+	rts
+
+.is_gpanel:
+	lda	#T_GPANEL
+	rts
+
+		
+.not_rpanelh:
+	txa
+	and	#TF_RPANELL
+	beq	.is_panel
+
+	lda	#T_BPANEL
+	rts
+
+.is_panel:	
+	lda	#T_PANEL
+	rts
+
+
+swapo:
+
+	rts
+
 
 do_move:
 step_table_target .equ tmp16
+	mov	#0,doswap
 	lda	newd
 	sta	gd
 	travel  gx,gy,newd,newx,newy
@@ -141,42 +219,139 @@ step_table_target .equ tmp16
 panel_step:	
 plain_move:
 	debug_p	ds_plain_move
+	lda	doswap
+	beq	.noswap
+	jsr	swapo
+
+.noswap:	
 	mov	newx,gx
 	debug_num
 	mov	newy,gy
 	debug_num
 	jsr	update_scroll_from_guy
 	rts
+
 	
 push_block:
+	;; directional blocks can only go the correct way
 	lda	target
 	cmp	#T_LR
 	beq	.lr
 	cmp	#T_UD
 	beq	.ud
 
-	jmp	.normal
+	jmp	.next1
 
 .lr:
 	lda	newd
 	cmp	#dir_up
-	beq	.no_move
-	cmp	#dir_down
-	beq	.no_move
-
-	jmp	.normal
+	bne	.lr1
+	jmp	.no_move
+.lr1:	cmp	#dir_down
+	bne	.next1
+	jmp	.no_move
 
 .ud:
 	lda	newd
 	cmp	#dir_left
+	bne	.ud1
+	jmp	.no_move
+.ud1:	cmp	#dir_right
+	bne	.next1
+	jmp	.no_move
+
+	
+.next1:
+	;; check to make sure the block can move
+	travel	newx,newy,newd,destx,desty
+	bne	.next1_1
+	jmp	.no_move
+
+.next1_1:	
+	;; check the TF_HASPANEL flag
+	flagat	destx,desty
+	and	#TF_HASPANEL
+	beq	.replace_with_floor
+	
+	;; if it has it, then set the replacement to be the panel
+	flagat	destx,desty
+	jsr	realpanel
+	sta	replacement
+	jmp	.next2
+	
+	;; otherwise, T_FLOOR
+.replace_with_floor:	
+	mov	#T_FLOOR,replacement	
+
+.next2:
+	tileat	destx,desty
+	cmp	#T_FLOOR
+	bne	.next3
+	;; floor
+	settile	destx,desty,target
+	settile	newx,newy,replacement
+	jmp	plain_move
+
+.next3:				; colored panels
+	tileat	destx,desty
+	cmp	#T_BPANEL
+	beq	.colored_panel
+	cmp	#T_RPANEL
+	beq	.colored_panel
+	cmp	#T_GPANEL
+	beq	.colored_panel
+	jmp	.next4
+
+.colored_panel:
+	lda	target
+	cmp	#T_LR
+	bne	.colored_panel1
+	jmp	.no_move
+.colored_panel1:
+	cmp	#T_UD
+	bne	.colored_panel2
+	jmp	.no_move
+
+.colored_panel2:	
+	settile	destx,desty,target
+	settile	newx,newy,replacement
+	jmp	plain_move
+	
+.next4:				; electric
+	tileat	destx,desty
+	cmp	#T_ELECTRIC
+	bne	.next5
+
+	lda	target
+	cmp	#T_LR
 	beq	.no_move
-	cmp	#dir_right
+	cmp	#T_UD
 	beq	.no_move
 
-.normal:
+	settile	newx,newy,replacement
+	jmp	plain_move
 
-.no_move:	
+
+.next5:				; regular panel
+	tileat	destx,desty
+	cmp	#T_PANEL
+	bne	.no_move
+
+	lda	target
+	cmp	#T_LR
+	beq	.no_move
+	cmp	#T_UD
+	beq	.no_move
+	mov	#1,doswap
+	settile	destx,desty,target
+	settile	newx,newy,replacement
+	jmp	plain_move
+	
+			
+.no_move:
 	rts
+
+
 
 push_green:
 	rts

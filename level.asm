@@ -1,5 +1,4 @@
 travel:	.macro
-	pha
 	mov \1,tx
 	debug_num
 	mov \2,ty
@@ -14,7 +13,6 @@ travel:	.macro
 	mov tty,\5
 	debug_num
 
-	pla
 	.endm
 	
 	
@@ -267,12 +265,7 @@ step_table_target .equ tmp16
 	lda	newd
 	sta	gd
 	travel  gx,gy,newd,newx,newy
-	lda	gx
-	cmp	newx		; check for actual movement
-	bne	.continue
-	lda	gy
-	cmp	newy
-	bne	.continue
+	bne	.continue	; check for actual movement
 
 	;; no movement!
 	jmp	no_move
@@ -302,7 +295,7 @@ plain_move:
 	mov	newy,gy
 	debug_num
 
-	jsr	make_step_noise
+	jsr	make_step_sound
 	
 	jmp	update_scroll_from_guy
 
@@ -408,10 +401,11 @@ push_block:
 
 .next4_2:	
 	settile	newx,newy,replacement
+	jsr	make_zap_sound	; block is zapped!
 	jmp	plain_move
 
 .next5:
-	tileat	destx,desty
+	tileat	destx,desty	; grey into hole
 	cmp	#T_HOLE
 	bne	.next6
 	lda	target
@@ -422,6 +416,7 @@ push_block:
 .next5_1:	
 	settile	destx,desty, #T_FLOOR
 	settile	newx,newy,replacement
+	jsr	make_hole_plug_sound
 	jmp	plain_move
 
 .next6:				; regular panel
@@ -509,12 +504,12 @@ break_block:
 t_0_hit:
 	swaptiles #T_UD,#T_LR
 	settile	newx,newy,#T_1
-	rts
+	jmp	make_swap_sound
 
 t_1_hit:
 	swaptiles #T_UD,#T_LR
 	settile	newx,newy,#T_0
-	rts
+	jmp	make_swap_sound
 
 send_pulse:
 	rts

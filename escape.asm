@@ -16,6 +16,8 @@ debug_str:	.ds 1
 debug_num:	.ds 1
 debug_tmp:	.ds 1
 debug_tmp_2:	.ds 1
+
+	
 tile_pos: .ds	1
 tile:	.ds	2
 tiles:	.ds	180
@@ -63,10 +65,10 @@ author:	.ds	20
 		
 	.bank	2
 	.org	$C000
-
-intr:	sei
-	rti
 	
+	.include "interrupts.asm"
+
+		
 start:	sei
 	mov	#0, level_num
 
@@ -96,61 +98,7 @@ start2:
 	sta	$2005
 	sta	$2005
 
-;;; palette 0
-	lda	#$0e		; black
-	sta	$2007
-	lda	#$2d		; 50gray
-	sta	$2007
-	lda	#$3d		; 25gray
-	sta	$2007
-	lda	#$38		; orange
-	sta	$2007
-
-;;; palette 1
-	lda	#$0e
-	sta	$2007
-	lda	#$16		; red
-	sta	$2007
-	lda	#$3d		; gray
-	sta	$2007
-	lda	#$28		; yellow
-	sta	$2007
-	
-	
-;;; palette 2
-	lda	#$0e		; black
-	sta	$2007
-	lda	#$12		; blue
-	sta	$2007
-	lda	#$3D		; gray
-	sta	$2007
-	lda	#$17		; brownish
-	sta	$2007
-	
-	
-;;; palette 3
-	lda	#$0e		; black
-	sta	$2007
-	lda	#$19		; green
-	sta	$2007
-	lda	#$3d		; gray
-	sta	$2007
-	lda	#$12		; blue
-	sta	$2007
-
-	
-;;; sprite palette 1
-	lda	#$3f
-	sta	$2006
-	lda	#$11
-	sta	$2006
-	lda	#$18		; brown
-	sta	$2007
-	lda	#$36		; pink
-	sta	$2007
-	lda	#$2C		; blue
-	sta	$2007
-	
+	.include "palettes.asm"	
 		
 	jsr	vwait
 	jsr	vwait
@@ -750,91 +698,7 @@ load_level:
 		
 	
 
-rledecode:
-run	.equ tmp
-size	.equ tmp_2
-bytes	.equ tmp_3
-char	.equ tmp_4
-
-	debug_p	ds1
-	debug_p ds_tmpaddr
-	lda	tmp_addr
-	sta	debug_num
-	lda	tmp_addr+1
-	sta	debug_num
-	;; take idx16, read from it and advance it, and store
-	;; result in place pointed by tmp_addr
-	mov	#180, size	; size of map
-	ldx	#0
-	ldy	#0
-	mov	[idx16], Y, bytes
-
-	inc16	idx16
-
-.loop:	
-	;; read a byte to determine run
-	mov	[idx16], Y, run
-	inc16	idx16
-	lda	run
-	bne	.run
-	jmp	.anti_run	; if 0, anti-run
-.run:	
-	;; run
-	debug_p	ds_run
-	mov	#0, char	; set char to 0
-	lda	bytes		; check if bytes == 0
-	beq	.in_run_loop	; skip and write zeros if bytes == 0
-
-	mov	[idx16], Y, char ; read a char, since bytes != 0
-	inc16	idx16
-.in_run_loop:
-	debug_p	ds_x
-	stx	debug_num
-	txa
-	tay
-	mov	char, [tmp_addr], Y ; write the content of the run
-	ldy	#0
-	inx
-	dec	size
-	dec	run
-	bne	.in_run_loop
-
-	;; done?
-	lda	size
-	bne	.loop_trampoline
-	jmp	.done
-.loop_trampoline:
-	jmp	.loop
-	
-.anti_run:
-	debug_p	ds_antirun
-	mov	[idx16], Y, run ; length of this anti-run
-	inc16	idx16
-.in_anti_run_loop:
-	lda	[idx16], Y
-	sta	debug_num
-	sta	char
-	txa
-	tay
-	lda	char
-	sta	[tmp_addr], Y ; write the content of the run
-	ldy	#0
-			
-	inc16	idx16
-	inx
-	dec	size
-	dec	run
-	bne	.in_anti_run_loop
-
-	;; done?
-	lda	size
-	beq	.done
-	jmp	.loop
-	
-	
-.done:		
-	rts
-			
+	.include "rle.asm"			
 		
 ;;; some data
 ;;; data
@@ -895,13 +759,15 @@ ds_i:	.db	"i",0
 ds_tmpaddr:	.db	"tmp_addr",0
 ds_tiles:	.db	"tiles",0
 ds_draw_guy	.db	"draw_guy",0
+
 			
 ;;; vectors
 	.bank	3
 	.org	$FFFA
-	.dw	intr,start,intr
+	.dw	nmi,start,intr
 
 
 	.bank	4
+
 	.incbin "escape.chr"
 	.incbin "debug.chr"

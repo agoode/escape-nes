@@ -44,7 +44,9 @@ x_scroll: .ds	1
 level_addr:	.ds	3
 
 sprite_dma_ok:	.ds	1		
-		
+last_joy_state:	.ds	1
+vwait_expected:	.ds	1
+			
 	.bss
 
 sprite:	.ds	256
@@ -82,7 +84,9 @@ start:	sei
 	jsr	vwait	
 	jsr	ppu_off
 	jsr	init_sprite_memory
-	
+
+	mov	#0,last_joy_state
+		
 	debug_p	ds_begin
 	
 	jsr	vwait	
@@ -101,7 +105,9 @@ start:	sei
 
 	.include "palettes.asm"	
 		
-	mov	#0, level_num
+	mov	#8, level_num
+	jsr	choose_level
+	mov	#8, level_num
 	jsr	choose_level
 	
 ;;; ppu on
@@ -109,6 +115,7 @@ start:	sei
 	
 	
 main_loop:
+ 	jsr	vwait
 	jsr	handle_joy
 	jmp	main_loop
 
@@ -181,10 +188,12 @@ choose_level:
 	
 
 	
-vwait:	
+vwait:
+	mov	#1,vwait_expected
+.vwait_in:
 	lda	$2002
-	bpl	vwait
-
+	bpl	.vwait_in
+	mov	#0,vwait_expected
 	rts
 
 
@@ -262,7 +271,8 @@ ds_tiles:	.db	"tiles",0
 ds_draw_guy	.db	"draw_guy",0
 ds_load_level	.db	"load level",0
 ds_draw_level	.db	"draw level",0
-				
+ds_late_vwait	.db	"*** missed vwait deadline! ***",0
+					
 ;;; vectors
 	.bank	3
 	.org	$FFFA

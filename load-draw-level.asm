@@ -109,12 +109,15 @@ draw_level:
 
 draw_tile:
 screen_pos .equ	tmp16
+	;; figure out the tile
 	ldx	tile_pos
 	mov	tile_pos_table_2, X, screen_pos+1
 	mov	tile_pos_table_1, X, screen_pos
 
+	;; get the PPU address for nametable spot
 	add16	screen_pos, #$20C0
 
+	;; translate into PPU address for attribute table spot
 	lda	screen_pos
 	asl	a
 	lda	screen_pos+1
@@ -140,8 +143,8 @@ screen_pos .equ	tmp16
 	tay
 	lda	tmp
 	sta	$2006	
-	ldx	$2007		; invalid data
-	ldx	$2007		; correct data
+ 	ldx	$2007		; invalid data
+ 	ldx	$2007		; correct data
 	sty	$2006		; reset address
 	sta	$2006
 
@@ -184,27 +187,28 @@ screen_pos .equ	tmp16
 	sta	$2007
 	
 
-.update_tile:						
-	lda	tmp16+1
+.update_tile:
+	;; actually write into the nametable (2x2 tiles)
+	lda	screen_pos+1
 	sta	$2006
-	lda	tmp16
+	lda	screen_pos
 	sta	$2006
 	lda	tile
 	sta	$2007		; update the tile
 
-	add16	tmp16, #1	; next part (right)
-	lda	tmp16+1
+	add16	screen_pos, #1	; next part (right)
+	lda	screen_pos+1
 	sta	$2006
-	lda	tmp16
+	lda	screen_pos
 	sta	$2006
 	inc	tile
 	lda	tile
 	sta	$2007		; update the tile
 
-	add16	tmp16, #$20	; next part (down)
-	lda	tmp16+1
+	add16	screen_pos, #$20	; next part (down)
+	lda	screen_pos+1
 	sta	$2006
-	lda	tmp16
+	lda	screen_pos
 	sta	$2006
 	lda	tile
 	clc
@@ -212,14 +216,13 @@ screen_pos .equ	tmp16
 	sta	tile
 	sta	$2007		; update the tile
 
-	add16	tmp16, #$FFFF	; last part (left)
-	lda	tmp16+1
+	add16	screen_pos, #$FFFF	; last part (left)
+	lda	screen_pos+1
 	sta	$2006
-	lda	tmp16
+	lda	screen_pos
 	sta	$2006
 	dec	tile
 	lda	tile
 	sta	$2007		; update the tile
 
 	rts
-

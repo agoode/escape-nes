@@ -11,7 +11,14 @@ handle_joy:
 	
 	lda	$4016
 	and	#%00000001	; start
-	beq	.j_up
+	beq	.no_start
+	;; check to see if already pressed
+	lda	last_joy_state
+	bit	#%00000001
+	bne	.j_up
+	
+	ora	#%00000001
+	sta	last_joy_state	
  	inc	level_num
  	lda	level_num
  	cmp	#12
@@ -19,11 +26,17 @@ handle_joy:
  	lda	#0
  	sta	level_num
 	
-.continue
+.continue:	
 	jsr	choose_level
 	rts
+
+.no_start:
+	;; reset start pressed
+	lda	last_joy_state
+	and	#%11111110
+	sta	last_joy_state
 	
-.j_up:	
+.j_up:
 	lda	$4016
 	and	#%00000001
 	beq	.j_down		; up

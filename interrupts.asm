@@ -3,6 +3,10 @@ intr:	sei
 
 nmi:	
 	pha
+	lda	vwait_expected
+	bne	.ok
+	debug_p ds_late_vwait
+.ok:	
 	lda	#0
 	sta	$2006
 	sta	$2006

@@ -88,7 +88,6 @@ author:	.ds	20
 
 tiles_changed:	.ds	180
 
-			
 vwait_expected:	.ds	1
 nmi_finished:	.ds	1
 
@@ -339,6 +338,8 @@ ds_not_bpanel	.db	"not bpanel",0
 ds_not_rpanel	.db	"not rpanel",0
 ds_not_gpanel	.db	"not gpanel",0
 ds_not_floor	.db	"not floor",0
+ds_where	.db	"where?",0
+ds_step_table	.db	"going into step table!",0
 	
 	.endif
 									

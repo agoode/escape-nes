@@ -89,7 +89,7 @@ make_hole_plug_sound:
 
 make_zap_sound:
 	;; sq1
-	lda	#%11011111
+	lda	#%11001101
 	sta	$4000
 
 	lda	#%00011010
@@ -98,7 +98,7 @@ make_zap_sound:
 	lda	#%11100111
 	sta	$4002
 
-	lda	#%11110100
+	lda	#%00000101
 	sta	$4003
 
 	rts
@@ -133,4 +133,20 @@ make_slide_sound:
 	sta	$400F
 	
 	rts
+
+
+make_transport_sound:
+	;; sq1
+	lda	#%10001000
+	sta	$4000
+
+	lda	#%10100010
+	sta	$4001
+
+	lda	#%00100011
+	sta	$4002
+
+	lda	#%00001000
+	sta	$4003
 	
+	rts

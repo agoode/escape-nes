@@ -8,11 +8,13 @@ travel:	.macro
 
 	jsr	travel_func
 
+	pha
 	mov ttx,\4
 	debug_num
 	mov tty,\5
 	debug_num
-
+	pla
+	
 	.endm
 	
 	
@@ -137,6 +139,27 @@ xy_to_index:
 	debug_num
 	rts
 
+
+where:	;; index is in A, put x and y in X and Y
+	debug_p	ds_where
+	tax
+	ldy	#0
+	sec
+	debug_num
+
+.loop:	sbc	#18
+	bcc	.done
+
+	iny
+	tax
+	jmp	.loop
+	
+.done:
+	stx	debug_port
+	sty	debug_port
+	rts
+
+	
 settile: .macro
 	ldx	\1
 	ldy	\2
@@ -191,14 +214,9 @@ swaptiles_func:
 	
 
 	
-checkstepoff:	.macro
-	ldx	\1
-	ldy	\2
-	jsr	checkstepoff_func
-	.endm
-
-checkstepoff_func:
-	jsr	checkleavepanel_func
+checkstepoff:
+	ldx	gx
+	ldy	gy
 	jsr	tileat_func
 	cmp	#T_TRAP1
 	beq	.t_hole
@@ -215,14 +233,17 @@ checkstepoff_func:
 	jmp	settile_func
 
 
-checkleavepanel_func:
+checkleavepanel:
+	ldx	gx
+	ldy	gy
 	jsr	tileat_func
 	cmp	#T_PANEL
 	beq	.swap
 	rts
-.swap:
-	jmp	swapo
 
+.swap:	
+	destat	gx,gy
+	jmp	swapo
 
 issphere:	.macro
 	ldx	\1
@@ -285,8 +306,12 @@ swapo:
 	tay
 	lda	otiles,X
 	sta	tiles,X
+	sta	new_tile
 	tya
 	sta	otiles,X
+
+	stx	tile_pos
+	jsr	update_tile_buffer
 
 	;; crazy stuff
 	lda	flags,X
@@ -364,7 +389,8 @@ step_table_target .equ tmp16
 	;; no movement!
 	jmp	no_move
 
-.continue:	
+.continue:
+	debug_p	ds_step_table
 	tileat  newx,newy
 	sta	target
 	asl	A
@@ -380,10 +406,16 @@ step_table_target .equ tmp16
 	jmp	[step_table_target]
 
 
-panel_step:	
+panel_step:
+	destat	newx,newy
+	jsr	swapo	
 plain_move:
 	debug_p	ds_plain_move
 
+	jsr	checkleavepanel
+	jsr	checkstepoff
+	
+	
 	mov	newx,gx
 	debug_num
 	mov	newy,gy
@@ -530,11 +562,13 @@ push_block:
 	bne	.next6_3
 	jmp	no_move
 .next6_3:	
-	mov	#1,doswap
 	settile	destx,desty,target
 	settile	newx,newy,replacement
-	jmp	plain_move
+	jsr	plain_move
 	
+	;; special thing for panel (doswap in the C++ version)
+	destat	destx,desty
+	jmp	swapo
 
 
 
@@ -804,8 +838,25 @@ slide_push:
 
 	
 transport_guy:
-	rts
+	destat	newx,newy
+	jsr	where
+	stx	newx
+	sty	newy
 
+	jsr	plain_move
+
+	tileat	newx,newy
+	cmp	#T_PANEL
+	bne	.no_swap
+	;; swap
+	destat	newx,newy
+	jsr	swapo
+
+.no_swap:		
+	jmp	make_transport_sound
+
+
+	
 break_block:
 	settile newx,newy,#T_FLOOR
 	jmp	make_break_sound

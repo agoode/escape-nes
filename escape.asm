@@ -92,21 +92,15 @@ start:	sei
 	jsr	vwait	
 	jsr	vwait
 
-	
+	jsr	zero_ppu_memory	
 
 ;;; draw item
 
-	lda	#$3f
-	sta	$2006
-	lda	#$00
-	sta	$2006
 	sta	$2005
 	sta	$2005
 
 	.include "palettes.asm"	
 		
-	mov	#8, level_num
-	jsr	choose_level
 	mov	#8, level_num
 	jsr	choose_level
 	
@@ -272,7 +266,9 @@ ds_draw_guy	.db	"draw_guy",0
 ds_load_level	.db	"load level",0
 ds_draw_level	.db	"draw level",0
 ds_late_vwait	.db	"*** missed vwait deadline! ***",0
-					
+ds_start_pressed .db	"START pressed",0
+ds_zero_ppu_memory .db	"zeroing some PPU memory",0
+						
 ;;; vectors
 	.bank	3
 	.org	$FFFA

@@ -1,3 +1,10 @@
+;;; loading palettes...
+	
+	lda	#$3f
+	sta	$2006
+	lda	#$00
+	sta	$2006
+
 ;;; palette 0
 	lda	#$0e		; black
 	sta	$2007

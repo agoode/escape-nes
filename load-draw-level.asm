@@ -79,6 +79,7 @@ load_level:
 	
 draw_level:
 	jsr	ppu_off
+ 	jsr	zero_ppu_memory
 	debug_p ds_draw_level
 	;; assumes load_level just called
 		
@@ -126,12 +127,12 @@ screen_pos .equ	tmp16
 	asl	a
 	asl	a
 	asl	a
-	sta	tmp16_2+1
+	sta	tmp
 	lda	screen_pos
 	and	#%00011100
 	lsr	a
 	lsr	a
-	ora	tmp16_2+1
+	ora	tmp
 	adc	#$C0	
 
 	sta	tmp
@@ -145,6 +146,7 @@ screen_pos .equ	tmp16
 	sta	$2006	
  	ldx	$2007		; invalid data
  	ldx	$2007		; correct data
+;	stx	debug_num
 	sty	$2006		; reset address
 	sta	$2006
 

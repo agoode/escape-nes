@@ -26,7 +26,8 @@ handle_joy:
  	lda	#0
  	sta	level_num
 	
-.continue:	
+.continue:
+	debug_p ds_start_pressed
 	jsr	choose_level
 	rts
 

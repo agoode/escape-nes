@@ -17,3 +17,29 @@ ppu_off:
 	sta	$2001
 
 	rts
+
+
+;;; try to make sure ppu is off, first
+zero_ppu_memory:
+	debug_p ds_zero_ppu_memory
+	;; zeroing only attribute tables for now
+	mov	#$23, $2006
+	mov	#$C0, $2006
+	lda	#$0
+
+	ldx	#$40
+.zero1:	sta	$2007
+	dex
+	bne	.zero1
+
+	mov	#$27, $2006
+	mov	#$C0, $2006
+	lda	#$0
+	
+	ldx	#$40
+.zero2:	sta	$2007
+	dex
+	bne	.zero2
+
+	rts
+	

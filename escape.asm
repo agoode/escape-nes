@@ -63,7 +63,6 @@ x_scroll: .ds	1
 level_addr:	.ds	3
 
 sprite_dma_ok:	.ds	1		
-safe_to_draw:	.ds	1
 cur_joy_state:	.ds	1
 last_joy_state:	.ds	1
 tiles_drawn:	.ds	1
@@ -111,7 +110,6 @@ nmi_finished:	.ds	1
 start:	sei
 
 	lda	#0
-	sta	safe_to_draw
 	sta	last_joy_state
 	sta	num_tiles_changed
 	

@@ -1,26 +1,26 @@
 ppu_on:
 	debug_p	ds_ppu_on
-	jsr	vwait
 	lda	#%10000000
  	sta	$2000	
-	jsr	vwait
 	lda	#%00011110
  	sta	$2001
-	jsr	vwait
 
 	rts
 
 ppu_off:
 	debug_p ds_ppu_off
-	jsr	vwait
 	lda	#0
 	sta	$2000
 	sta	$2001
-	jsr	vwait
 
 	rts
 
+mask_nmi:
+	lda	#0
+	sta	$2000
+	rts
 
+	
 ;;; try to make sure ppu is off, first
 zero_ppu_memory:
 	debug_p ds_zero_ppu_memory
@@ -44,7 +44,7 @@ zero_ppu_memory:
 ;  	bne	.zero2
 
 	
-	lda	#0
+	lda	#%00011011
 	ldx	#44
 .zero_buffer:
  	sta	attr_buffer, X

@@ -1,7 +1,6 @@
 load_level:
 	debug_p ds_load_level
-	mov	#0,safe_to_draw
- 	jsr	zero_ppu_memory
+	jsr	mask_nmi
 	
 	mov	#0, tmp_size+1
 	mov	#dir_down, gd
@@ -79,7 +78,6 @@ load_level:
 	mov16	#flags, tmp_addr
  	jsr	rledecode
 
-	mov	#1,safe_to_draw
 	rts
 		
 	
@@ -100,12 +98,12 @@ draw_level:
 	jmp	.loop
 
 .done:
-  	jsr	ppu_off
- 	lda	#180
- 	sta	drawing_limit
-;   	jsr	copy_some_tiles_to_ppu
+   	jsr	ppu_off
+  	lda	#180
+  	sta	drawing_limit
+    	jsr	copy_some_tiles_to_ppu
 
- 	jsr	ppu_on
+  	jsr	ppu_on
 	rts
 
 

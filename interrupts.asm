@@ -21,9 +21,7 @@ nmi:
 	sta	$4014
 
 .no_dma:
-	lda	safe_to_draw
-	beq	.done
-	lda	#6
+	lda	#4
 	sta	drawing_limit
 	jsr	copy_some_tiles_to_ppu
 	

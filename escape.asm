@@ -21,11 +21,16 @@ tile:	.ds	2
 tiles:	.ds	180
 
 level_num:	.ds	1
-	
+		
 gx:	.ds	1
 gy:	.ds	1
 gd:	.ds	1
-
+tx:	.ds	1
+ty:	.ds	1
+td:	.ds	1
+newx:	.ds	1
+newy:	.ds	1
+	
 idx16:	.ds	2
 tmp:	.ds	1
 tmp_2:	.ds	1
@@ -64,9 +69,10 @@ author:	.ds	20
 		
 	.include "rle.asm"			
 	.include "joystick.asm"	
+	.include "level.asm"
 	.include "guy.asm"	
 	.include "load-draw-level.asm"
-	.include "ppu.asm"	
+	.include "ppu.asm"
 
 	.bank	1
 	.org	$A000

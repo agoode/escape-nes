@@ -1,40 +1,25 @@
 move_guy_up:
 	debug_p	ds_move_up
-	mov	#dir_up, gd
-	lda	gy
-	beq	.no_move
-	sec
-	sbc	#1
-; 	sta	debug_num
-	sta	gy
-.no_move:
+	lda	#dir_up
+	sta	gd
+	travel gx,gy,#dir_up,gx,gy
 	rts
 
 
 move_guy_down:
 	debug_p	ds_move_down
-	mov	#dir_down, gd
-	lda	gy
-	clc
-	adc	#1
-	cmp	#10
-; 	sta	debug_num
-	beq	.no_move
-	sta	gy
-.no_move:
+	lda	#dir_down
+	sta	gd
+	travel gx,gy,#dir_down,gx,gy
 	rts
 
 
 move_guy_right:
 	debug_p	ds_move_right
-	mov	#dir_right, gd
-	lda	gx
-	clc
-	adc	#1
-	cmp	#18
-; 	sta	debug_num
+	lda	#dir_right
+	sta	gd
+	travel gx,gy,#dir_right,gx,gy
 	beq	.no_move
-	sta	gx
 	jsr	update_scroll_from_guy
 .no_move:
 	rts
@@ -42,13 +27,10 @@ move_guy_right:
 
 move_guy_left:
 	debug_p	ds_move_left
-	mov	#dir_left, gd
-	lda	gx
-	sec
-	sbc	#1
-; 	sta	debug_num
-	bmi	.no_move	
-	sta	gx
+	lda	#dir_left
+	sta	gd
+	travel gx,gy,#dir_left,gx,gy
+	beq	.no_move	
 	jsr	update_scroll_from_guy
 .no_move:
 	rts

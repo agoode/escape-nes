@@ -105,7 +105,7 @@ strcpyp2c	.macro
 	mov	#0, \2, Y
 	.endm
 
-debug .equ 1
+debug .equ 0
 debug_num .macro
 	.if	debug
 	sta	debug_port

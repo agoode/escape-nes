@@ -39,6 +39,7 @@ load_level:
 	mov	[idx16], Y, gy
 	add16	idx16, #4
 
+	jsr	update_scroll_from_guy
 		
 	;; start rledecoding
  	mov16	#tiles, tmp_addr

@@ -1,65 +1,65 @@
 ;;; tiles, as defined in level.h
 	
 	.rsset $0
-T_FLOOR	.rs 1
-T_RED	.rs 1
-T_BLUE	.rs 1
-T_GREY	.rs 1
-T_GREEN	.rs 1
-T_EXIT	.rs 1
-T_HOLE	.rs 1
-T_GOLD	.rs 1
-T_LASER	.rs 1
-T_PANEL	.rs 1
-T_STOP	.rs 1
-T_RIGHT	.rs 1
-T_LEFT	.rs 1
-T_UP	.rs 1
-T_DOWN	.rs 1
-T_ROUGH	.rs 1
+T_FLOOR		.rs 1
+T_RED		.rs 1
+T_BLUE		.rs 1
+T_GREY		.rs 1
+T_GREEN		.rs 1
+T_EXIT		.rs 1
+T_HOLE		.rs 1
+T_GOLD		.rs 1
+T_LASER		.rs 1
+T_PANEL		.rs 1
+T_STOP		.rs 1
+T_RIGHT		.rs 1
+T_LEFT		.rs 1
+T_UP		.rs 1
+T_DOWN		.rs 1
+T_ROUGH		.rs 1
 
 T_ELECTRIC	.rs 1
-T_ON	.rs 1
-T_OFF	.rs 1
+T_ON		.rs 1
+T_OFF		.rs 1
 T_TRANSPORT	.rs 1
 T_BROKEN	.rs 1
-T_LR	.rs 1
-T_UD	.rs 1
-T_0	.rs 1
-T_1	.rs 1
-T_NS	.rs 1
-T_NE	.rs 1
-T_NW	.rs 1
-T_SE	.rs 1
-T_SW	.rs 1
-T_WE	.rs 1
+T_LR		.rs 1
+T_UD		.rs 1
+T_0		.rs 1
+T_1		.rs 1
+T_NS		.rs 1
+T_NE		.rs 1
+T_NW		.rs 1
+T_SE		.rs 1
+T_SW		.rs 1
+T_WE		.rs 1
 T_BUTTON	.rs 1
 
 T_BLIGHT	.rs 1
 T_RLIGHT	.rs 1
 T_GLIGHT	.rs 1
-T_BLACK	.rs 1
-T_BUP	.rs 1
-T_BDOWN	.rs 1
-T_RUP	.rs 1
-T_RDOWN	.rs 1
-T_GUP	.rs 1
-T_GDOWN	.rs 1
+T_BLACK		.rs 1
+T_BUP		.rs 1
+T_BDOWN		.rs 1
+T_RUP		.rs 1
+T_RDOWN		.rs 1
+T_GUP		.rs 1
+T_GDOWN		.rs 1
 T_BSPHERE	.rs 1
 T_RSPHERE	.rs 1
 T_GSPHERE	.rs 1
 T_SPHERE	.rs 1
-T_UNUSED_1	.rs 1
-T_UNUSED_2	.rs 1
+T_TRAP2		.rs 1
+T_TRAP1		.rs 1
 
 T_BPANEL	.rs 1
 T_RPANEL	.rs 1
 T_GPANEL	.rs 1
 
 letter_start:
-	.db $A0
+	.equ $A0
 laser_sprite_byte:
-	.db 4
+	.equ 4
 
 dir_up		.equ 1
 dir_down	.equ 2
@@ -73,7 +73,7 @@ guy_d_tile:
 guy_l_tile:
 	.db $E4,$E5,$F4,$F5
 laser_tile:
-	.db $E6, $F6
+	.db $E6,$F6
 
 	
 tile_name_table:
@@ -130,4 +130,3 @@ tile_pos_table_2:
 	    $06,$06, \
 	    $02,$02,$02,$02,$02,$02,$02,$02,$02,$02,$02,$02,$02,$02,$02,$02, \
 	    $06,$06
-	

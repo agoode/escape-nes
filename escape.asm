@@ -44,6 +44,7 @@ x_scroll: .ds	1
 level_addr:	.ds	3
 
 sprite_dma_ok:	.ds	1		
+cur_joy_state:	.ds	1
 last_joy_state:	.ds	1
 vwait_expected:	.ds	1
 			
@@ -268,7 +269,12 @@ ds_draw_level	.db	"draw level",0
 ds_late_vwait	.db	"*** missed vwait deadline! ***",0
 ds_start_pressed .db	"START pressed",0
 ds_zero_ppu_memory .db	"zeroing some PPU memory",0
-						
+ds_update_scroll .db	"update scroll from guy",0
+ds_move_up	.db	"moving guy UP",0
+ds_move_left	.db	"moving guy LEFT",0
+ds_move_right	.db	"moving guy RIGHT",0
+ds_move_down	.db	"moving guy DOWN",0
+								
 ;;; vectors
 	.bank	3
 	.org	$FFFA

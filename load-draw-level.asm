@@ -2,6 +2,8 @@ load_level:
 	debug_p ds_load_level
 	jsr	mask_nmi
 
+	jsr	init_sprite_memory
+
 	lda	#0
 	sta	x_scroll
 	sta	is_dead

@@ -133,7 +133,6 @@ start:	sei
 	sta	num_tiles_changed
 	
 	jsr	ppu_off
-	jsr	init_sprite_memory
 	jsr	init_dirty_tiles
 
 	debug_p	ds_begin
@@ -174,6 +173,7 @@ main_loop:
 	lda	end_sound_made
 	bne	.no_laser_sound
 	jsr	make_laser_sound
+	jsr	draw_laser_beam
 	lda	#1
 	sta	end_sound_made
 .no_laser_sound:	
@@ -274,11 +274,15 @@ vwait:
 
 
 init_sprite_memory:
-	ldx	#$FF
-.loop:	beq	.end	
-	mov	#$FF, sprite, X
-	dex
-.end:	rts
+	ldx	#0
+	lda	#$FF
+.loop:	dex
+	beq	.end
+	sta	sprite, X
+	jmp	.loop
+.end:
+	sta	sprite
+	rts
 
 
 	
@@ -375,6 +379,7 @@ ds_not_gpanel	.db	"not gpanel",0
 ds_not_floor	.db	"not floor",0
 ds_where	.db	"where?",0
 ds_step_table	.db	"going into step table!",0
+ds_laser_beam	.db	"lasered!",0
 	
 	.endif
 									

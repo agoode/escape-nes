@@ -59,3 +59,15 @@
 	sta	$2007
 	lda	#$2C		; blue
 	sta	$2007
+
+;;; sprite palette 2
+	lda	#$3f
+	sta	$2006
+	lda	#$15
+	sta	$2006
+	lda	#$16		; red
+	sta	$2007
+	lda	#$27		; orange
+	sta	$2007
+	lda	#$30		; white
+	sta	$2007

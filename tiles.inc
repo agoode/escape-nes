@@ -77,8 +77,6 @@ TF_ROPANELH	.equ 32
 	
 letter_start:
 	.equ $A0
-laser_sprite_byte:
-	.equ 4
 
 dir_up		.equ 1
 dir_down	.equ 2

@@ -257,3 +257,56 @@ draw_guy:
 .done:
 	rts
 
+
+
+draw_laser_beam:
+	debug_p	ds_laser_beam
+	;; read guy sprite position
+	lda	sprite
+	sta	ly
+	lda	sprite+3
+	sta	lx
+	
+	;; choose direction
+	lda	ld
+	cmp	#dir_up
+	beq	.up
+	cmp	#dir_down
+	beq	.down
+	cmp	#dir_right
+	beq	.right
+	cmp	#dir_left
+	beq	.left
+
+.right:	
+	;; write 2 sprites
+	lda	laser_tile
+	sta	sprite+17
+	sta	sprite+21
+
+	lda	lx
+	sec
+	sbc	#3
+	sta	sprite+19
+	sta	sprite+23
+	
+	clc
+	lda	ly
+	adc	#1
+	sta	sprite+16
+	adc	#7
+	sta	sprite+20
+	
+	lda	#%11000001
+	sta	sprite+18
+	lda	#%01000001
+	sta	sprite+22
+
+
+	rts
+
+.left:
+.up:
+.down:
+
+	rts

@@ -8,22 +8,6 @@ j_left:		.equ	%01000000
 j_right:	.equ	%10000000
 
 	
-perform_actions: .macro
-	lda	is_dead
-	bne	.do_nothing\@
-	lda	is_won
-	bne	.do_nothing\@
-	
-	jsr	mask_nmi
-
-	jsr	do_move
-	jsr	draw_guy
-	jsr	set_end_states
-	
-	jsr	ppu_on
-
-.do_nothing\@:	
-	.endm
 		
 handle_joy:
 	;; don't do it if drawing
@@ -118,42 +102,36 @@ handle_joy:
 	and	#j_right
 	beq	.act1
 	mov	#dir_right,newd
-	perform_actions
+	jsr	handle_direction
 
 .act1:	lda	last_joy_state
 	and	#j_left
 	beq	.act2
 	mov	#dir_left,newd
-	perform_actions
+	jsr	handle_direction
 
 .act2:	lda	last_joy_state
 	and	#j_down
 	beq	.act3
 	mov	#dir_down,newd
-	perform_actions
+	jsr	handle_direction
 
 .act3:	lda	last_joy_state
 	and	#j_up
 	beq	.act4
 	mov	#dir_up,newd
-	perform_actions
+	jsr	handle_direction
 
 .act4:	lda	last_joy_state
 	and	#j_start
 	beq	.act5
-	lda	is_won		; only advance if won
-	beq	.not_won
-	jsr	go_to_next_level
-.not_won:	
-	jsr	choose_level
+	jsr	handle_start
 	
 .act5:	lda	last_joy_state
 	and	#j_select
 	beq	.act6
-	jsr	go_to_next_level
-	jsr	choose_level
-
-.act6
+	jsr	handle_select
+.act6:	
 .done:
 	lda	cur_joy_state
 	sta	last_joy_state
@@ -170,4 +148,38 @@ go_to_next_level:
 .level_set:	
 	sta	level_num
 
+	rts
+
+
+handle_start:
+	lda	is_won		; only advance if won
+	beq	.not_won
+	jsr	go_to_next_level
+.not_won:	
+	jsr	choose_level
+
+	rts
+	
+handle_select:
+	jsr	go_to_next_level
+	jsr	choose_level
+
+	rts
+
+
+handle_direction:
+	lda	is_dead
+	bne	.do_nothing
+	lda	is_won
+	bne	.do_nothing
+	
+	jsr	mask_nmi
+
+	jsr	do_move
+	jsr	draw_guy
+	jsr	set_end_states
+	
+	jsr	ppu_on
+
+.do_nothing:	
 	rts

@@ -86,7 +86,18 @@ strcpyp2c	.macro
 	ldx	\3
 	beq	.endloop\@
 .loop\@:
-	mov	[\1], Y, \2, Y
+	lda	[\1], Y
+	cmp	#$61
+	bmi	.no_upcase\@
+	cmp	#$7B
+	bpl	.no_upcase\@
+
+	;; upcase
+	sec
+	sbc	#$20
+
+.no_upcase\@:	
+	sta	\2, Y
 	iny
 	dex
 	bne	.loop\@
@@ -158,7 +169,7 @@ draw_text_as_sprites:	.macro
 	adc	#$80
 	sta	sprite+33, Y
 
-	lda	#25
+	lda	#$30
 	sta	sprite+32, Y
 
 	lda	#1
@@ -166,7 +177,7 @@ draw_text_as_sprites:	.macro
 
 	tya
 	asl	A
-	adc	#10
+	adc	#$60
 	sta	sprite+35, Y
 
 	inx

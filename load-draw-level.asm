@@ -1,11 +1,46 @@
+copy_string_to_ppu:	.macro
+	;; address
+	lda	#$20
+	sta	$2006
+	lda	\2
+	sta	$2006
+
+	ldx	#0
+	stx	tmp
+	clc
+.loop\@:
+	txa
+	cmp	#31
+	beq	.done\@
+
+	lda	#' '
+	ldy	tmp
+	bne	.print\@	; padding
+		
+	lda	\1, X		; check for NUL
+	bne	.print\@
+	ldy	#1		; NUL
+	sty	tmp
+	lda	#' '
+
+.print\@:	
+	adc	#$80
+	sta	$2007
+
+	inx
+	jmp	.loop\@
+
+.done\@:	
+	.endm
+
+
+	
+	
 load_level:
 	debug_p ds_load_level
 	jsr	mask_nmi
 
-	jsr	init_sprite_memory
-
 	lda	#0
-	sta	x_scroll
 	sta	is_dead
 	sta	is_won
 	sta	end_sound_made
@@ -50,8 +85,6 @@ load_level:
 	mov	[idx16], Y, gy
 	add16	idx16, #4
 
-	jsr	update_scroll_from_guy
-		
 	;; start rledecoding
  	mov16	#tiles, tmp_addr
 	jsr	rledecode
@@ -107,6 +140,14 @@ draw_level:
 
 .done:
     	jsr	ppu_off
+
+	copy_string_to_ppu title, #$41
+	copy_string_to_ppu author, #$81
+	
+	jsr	update_scroll_from_guy
+	jsr	init_sprite_memory
+	jsr	draw_guy
+
    	lda	#180
    	sta	drawing_limit
  	jsr	copy_some_tiles_to_ppu
@@ -335,5 +376,7 @@ init_dirty_tiles:
 .zero:	sta	dirty_tiles	; X=0
 	
 	rts
+
+
 
 

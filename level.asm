@@ -600,7 +600,6 @@ electric_off:
 	debug_p	ds_electric_off
 	ldx	#180
 .e_loop:
-	stx	debug_port
 	dex
 	beq	.done
 	lda	tiles, X

@@ -56,6 +56,8 @@ pulsed:	.ds	1
 landon:	.ds	1
 doswap:	.ds	1
 
+ppu_safe: .ds	1
+
 is_dead:.ds	1
 is_won:	.ds	1
 end_sound_made: .ds	1
@@ -145,6 +147,10 @@ start:	sei
 	lda	#%00001111	; sound enable
 	sta	$4015
 
+	;; disable frame counter IRQ
+	lda	#%01000000
+	sta	$4017
+
 ;;; draw item
 
 	sta	$2005
@@ -154,8 +160,9 @@ start:	sei
 		
 	mov	#0, level_num
 	jsr	choose_level
-	
+
 ;;; ppu on
+	cli
 	jsr	ppu_on
 	
 	

@@ -1,11 +1,14 @@
 ppu_on:
 ; 	debug_p	ds_ppu_on
-	jsr	vwait
 	lda	#%10000000
  	sta	$2000	
-; 	lda	#%00011110
+; 	lda	#%00011110           ; handled in nmi now
 ;  	sta	$2001
 
+	lda	#1
+	sta	ppu_safe
+		
+	jsr	vwait
 	rts
 
 ppu_off:
@@ -14,11 +17,14 @@ ppu_off:
 	sta	$2000
 	sta	$2001
 
+	jsr	vwait
 	rts
 
 mask_nmi:
+; 	lda	#0                   ; must keep nmi active for scroll
+; 	sta	$2000
 	lda	#0
-	sta	$2000
+	sta	ppu_safe
 	rts
 
 	

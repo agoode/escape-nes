@@ -7,7 +7,6 @@ move_guy_up:
 	sbc	#1
 ; 	sta	debug_num
 	sta	gy
-	jsr	update_scroll_from_guy
 .no_move:
 	rts
 
@@ -22,7 +21,6 @@ move_guy_down:
 ; 	sta	debug_num
 	beq	.no_move
 	sta	gy
-	jsr	update_scroll_from_guy
 .no_move:
 	rts
 

@@ -14,8 +14,6 @@
 	.zp
 debug_str:	.ds 1
 debug_num:	.ds 1
-debug_tmp:	.ds 1
-debug_tmp_2:	.ds 1
 
 	
 tile_pos: .ds	1

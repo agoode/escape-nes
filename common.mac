@@ -97,8 +97,9 @@ strcpyp2c	.macro
 debug .equ 1
 debug_p	.macro
 	.if	debug
-	stx	debug_tmp
-	sta	debug_tmp_2
+	pha
+	txa
+	pha
 	ldx	#0
 .start\@:
 	lda	\1, X
@@ -109,8 +110,9 @@ debug_p	.macro
 .done\@:
 	lda	#$0a
 	sta	debug_str
-	ldx	debug_tmp
-	lda	debug_tmp_2
+	pla
+	tax
+	pla
 	.endif
 	.endm
 

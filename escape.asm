@@ -101,7 +101,7 @@ start:	sei
 
 	.include "palettes.asm"	
 		
-	mov	#12, level_num
+	mov	#0, level_num
 	jsr	choose_level
 	
 ;;; ppu on
@@ -115,6 +115,8 @@ main_loop:
 	
 choose_level:
 	lda	level_num
+	sta	debug_num
+	
 	bne	.l1
 	mov16	#sample_level01, level_addr
 	jmp	.go
@@ -260,7 +262,7 @@ ds_tiles:	.db	"tiles",0
 ds_draw_guy	.db	"draw_guy",0
 ds_load_level	.db	"load level",0
 ds_draw_level	.db	"draw level",0
-			
+				
 ;;; vectors
 	.bank	3
 	.org	$FFFA

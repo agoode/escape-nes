@@ -71,7 +71,7 @@ sub printm {
   my $l = 0;
   while (@m) {
     my $v = shift @m;
-    printf("%4d", $v);
+    print(chr($v+32));
     $l++;
     if ($l == $w) {
       $l = 0;

@@ -595,232 +595,245 @@
     6                                             
     7  00:0318                    mov16   level_addr, idx16
     8  00:8324  A0 00             ldy     #0
-    9  00:0326                    mov     [idx16], Y, tmp
+    9  00:0326                    mov     [idx16], Y, debug_str
    10  00:832B  C8                iny
-   11  00:032C                    mov     [idx16], Y, tmp
+   11  00:032C                    mov     [idx16], Y, debug_str
    12  00:8331  C8                iny
-   13  00:0332                    mov     [idx16], Y, tmp
+   13  00:0332                    mov     [idx16], Y, debug_str
    14  00:8337  C8                iny
-   15  00:0338                    mov     [idx16], Y, tmp
-   16  00:833D  A0 0F             ldy     #15             ; ESXL + width + height + MSB of size of title
-   17  00:033F                    mov     [idx16], Y, tmp_size    ; size of title string
-   18  00:0344                    add16   idx16, #16              ; move to start of title
-   19                     
-   20                             ;; copy the title string
-   21  00:0355                    strcpyp2c       idx16, title, tmp_size
-   22                     
-   23  00:036A                    add16   idx16, tmp_size ; move past the title string
-   24  00:837D  A0 03             ldy     #3              ; MSB of size of author
-   25  00:037F                    mov     [idx16], Y, tmp_size ; size of author string
-   26  00:0384                    add16   idx16, #4       ; move to start of author
-   27                     
-   28                             ;; copy the author string
-   29  00:0395                    strcpyp2c       idx16, author, tmp_size
-   30                     
-   31  00:03AA                    add16   idx16, tmp_size ; move past the author string
+   15  00:0338                    mov     [idx16], Y, debug_str
+   16  00:033D                    mov     #0, debug_str
+   17  00:8342  A0 0F             ldy     #15             ; ESXL + width + height + MSB of size of title
+   18  00:0344                    mov     [idx16], Y, tmp_size    ; size of title string
+   19  00:8349  8D 01 00          sta     debug_num
+   20  00:034C                    add16   idx16, #16              ; move to start of title
+   21                     
+   22                             ;; copy the title string
+   23  00:035D                    strcpyp2c       idx16, title, tmp_size
+   24                     
+   25  00:0372                    add16   idx16, tmp_size ; move past the title string
+   26  00:8385  A0 03             ldy     #3              ; MSB of size of author
+   27  00:0387                    mov     [idx16], Y, tmp_size ; size of author string
+   28  00:038C                    add16   idx16, #4       ; move to start of author
+   29                     
+   30                             ;; copy the author string
+   31  00:039D                    strcpyp2c       idx16, author, tmp_size
    32                     
-   33  00:83BD  A0 03             ldy     #3              ; MSB of guy x
-   34  00:03BF                    mov     [idx16], Y, gx
-   35  00:03C4                    add16   idx16, #4
-   36  00:83D5  A0 03             ldy     #3              ; MSB of guy y
-   37  00:03D7                    mov     [idx16], Y, gy
-   38  00:03DC                    add16   idx16, #4
-   39                     
-   40                                     
-   41                             ;; start rledecoding
-   42  00:03ED                    mov16   #tiles, tmp_addr
-   43  00:83F7  20 00 80          jsr     rledecode
-   44                     
-   45                     
-   46  00:03FA                    debug_p ds_tiles
-   47                     ;       mov     #tiles, debug_num
-   48                     ;       mov     (#tiles)+1, debug_num
-   49  00:8419  A2 00             ldx     #0
-   50  00:841B            .tile_print:    
-   51                     ;       mov     tiles, X, debug_num
-   52  00:841B  E8                inx
-   53  00:841C  8A                txa
-   54  00:841D  C9 B4             cmp     #180
-   55  00:841F  D0 FA             bne     .tile_print
-   56                             
-   57  00:0421                    mov16   #otiles, tmp_addr
-   58  00:842B  20 00 80          jsr     rledecode
-   59  00:042E                    mov16   #dests, tmp_addr
-   60  00:8438  20 00 80          jsr     rledecode
-   61  00:043B                    mov16   #flags, tmp_addr
-   62  00:8445  20 00 80          jsr     rledecode
-   63                     
-   64  00:8448  60                rts
-   65                                     
-   66                             
-   67  00:8449            draw_level:
-   68  00:8449  20 04 86          jsr     ppu_off
-   69  00:044C                    debug_p ds_draw_level
-   70                             ;; assumes load_level just called
-   71                                     
-   72  00:046B                    mov     #0, tile_pos
-   73  00:8470  AD 04 00  .loop:  lda     tile_pos
-   74  00:8473  C9 B4             cmp     #180
-   75  00:8475  F0 20             beq     .done
-   76  00:8477  89 04             bit     #%00000100
-   77  00:8479  D0 00             bne     .continue
-   78  00:847B            .continue:      
-   79  00:847B  AE 04 00          ldx     tile_pos
-   80                     
-   81                             ;; get the tile
-   82  00:847E  BD 07 00          lda     tiles, X
-   83  00:8481  AA                tax
-   84  00:8482  BD 10 C8          lda     tile_name_table, X
-   85  00:8485  8D 05 00          sta     tile
-   86  00:8488  BD 43 C8          lda     tile_attr_table, X
-   87  00:848B  8D 06 00          sta     tile+1  
-   88                     
-   89  00:848E  20 9B 84          jsr     draw_tile
-   90  00:8491  EE 04 00          inc     tile_pos
-   91  00:8494  4C 70 84          jmp     .loop
-   92                     
-   93  00:8497  20 D4 85  .done:  jsr     ppu_on          
-   94  00:849A  60                rts
-   95                     
-   96                     
-   97  00:849B            draw_tile:
-   98           00C6      screen_pos .equ tmp16
-   99  00:849B  AE 04 00          ldx     tile_pos
-  100  00:049E                    mov     tile_pos_table_2, X, screen_pos+1
-  101  00:04A4                    mov     tile_pos_table_1, X, screen_pos
-  102                     
-  103  00:04AA                    add16   screen_pos, #$20C0
-  104                     
-  105  00:84BB  AD C6 00          lda     screen_pos
-  106  00:84BE  0A                asl     a
-  107  00:84BF  AD C7 00          lda     screen_pos+1
-  108  00:84C2  2A                rol     a
-  109  00:84C3  29 07             and     #%00000111
-  110  00:84C5  0A                asl     a
-  111  00:84C6  0A                asl     a
-  112  00:84C7  0A                asl     a
-  113  00:84C8  8D C9 00          sta     tmp16_2+1
-  114  00:84CB  AD C6 00          lda     screen_pos
-  115  00:84CE  29 1C             and     #%00011100
-  116  00:84D0  4A                lsr     a
-  117  00:84D1  4A                lsr     a
-  118  00:84D2  0D C9 00          ora     tmp16_2+1
-  119  00:84D5  69 C0             adc     #$C0    
-  120                     
-  121  00:84D7  8D C1 00          sta     tmp
-  122  00:84DA  AD C7 00          lda     screen_pos+1
-  123  00:84DD  29 FC             and     #%11111100
-  124  00:84DF  18                clc
-  125  00:84E0  69 03             adc     #$3     
-  126  00:84E2  8D 06 20          sta     $2006           ; set address of thing
-  127  00:84E5  A8                tay
-  128  00:84E6  AD C1 00          lda     tmp
-  129  00:84E9  8D 06 20          sta     $2006   
-  130  00:84EC  AE 07 20          ldx     $2007           ; invalid data
-  131  00:84EF  AE 07 20          ldx     $2007           ; correct data
-  132  00:84F2  8C 06 20          sty     $2006           ; reset address
-  133  00:84F5  8D 06 20          sta     $2006
-  134                     
-  135  00:84F8  AD C6 00          lda     screen_pos      ; find the bit
-  136  00:84FB  29 42             and     #%01000010
-  137  00:84FD  D0 12             bne     .test1
-  138  00:84FF  AD 06 00          lda     tile+1
-  139  00:8502  29 03             and     #%00000011
-  140  00:8504  8D C1 00          sta     tmp
-  141  00:8507  8A                txa
-  142  00:8508  0D C1 00          ora     tmp
-  143  00:850B  8D 07 20          sta     $2007           ; set the color
-  144  00:850E  4C 4C 85          jmp     .update_tile
-  145                     
-  146  00:8511  C9 02     .test1: cmp     #%00000010
-  147  00:8513  D0 12             bne     .test2
-  148  00:8515  AD 06 00          lda     tile+1
-  149  00:8518  29 0C             and     #%00001100
-  150  00:851A  8D C1 00          sta     tmp
-  151  00:851D  8A                txa
-  152  00:851E  0D C1 00          ora     tmp
-  153  00:8521  8D 07 20          sta     $2007
-  154  00:8524  4C 4C 85          jmp     .update_tile
-  155                     
-  156  00:8527  C9 40     .test2: cmp     #%01000000
-  157  00:8529  D0 12             bne     .test3
-  158  00:852B  AD 06 00          lda     tile+1
-  159  00:852E  29 30             and     #%00110000
-  160  00:8530  8D C1 00          sta     tmp
-  161  00:8533  8A                txa
-  162  00:8534  0D C1 00          ora     tmp
-  163  00:8537  8D 07 20          sta     $2007
-  164  00:853A  4C 4C 85          jmp     .update_tile
-  165                     
-  166  00:853D  AD 06 00  .test3: lda     tile+1
-  167  00:8540  29 C0             and     #%11000000
-  168  00:8542  8D C1 00          sta     tmp
-  169  00:8545  8A                txa
-  170  00:8546  0D C1 00          ora     tmp
-  171  00:8549  8D 07 20          sta     $2007
-  172                             
-  173                     
-  174  00:854C            .update_tile:                                           
-  175  00:854C  AD C7 00          lda     tmp16+1
-  176  00:854F  8D 06 20          sta     $2006
-  177  00:8552  AD C6 00          lda     tmp16
-  178  00:8555  8D 06 20          sta     $2006
-  179  00:8558  AD 05 00          lda     tile
-  180  00:855B  8D 07 20          sta     $2007           ; update the tile
-  181                     
-  182  00:055E                    add16   tmp16, #1       ; next part (right)
-  183  00:856F  AD C7 00          lda     tmp16+1
-  184  00:8572  8D 06 20          sta     $2006
-  185  00:8575  AD C6 00          lda     tmp16
-  186  00:8578  8D 06 20          sta     $2006
-  187  00:857B  EE 05 00          inc     tile
-  188  00:857E  AD 05 00          lda     tile
-  189  00:8581  8D 07 20          sta     $2007           ; update the tile
-  190                     
-  191  00:0584                    add16   tmp16, #$20     ; next part (down)
-  192  00:8595  AD C7 00          lda     tmp16+1
-  193  00:8598  8D 06 20          sta     $2006
-  194  00:859B  AD C6 00          lda     tmp16
-  195  00:859E  8D 06 20          sta     $2006
-  196  00:85A1  AD 05 00          lda     tile
-  197  00:85A4  18                clc
-  198  00:85A5  69 10             adc     #$10
-  199  00:85A7  8D 05 00          sta     tile
-  200  00:85AA  8D 07 20          sta     $2007           ; update the tile
-  201                     
-  202  00:05AD                    add16   tmp16, #$FFFF   ; last part (left)
-  203  00:85BE  AD C7 00          lda     tmp16+1
-  204  00:85C1  8D 06 20          sta     $2006
-  205  00:85C4  AD C6 00          lda     tmp16
-  206  00:85C7  8D 06 20          sta     $2006
-  207  00:85CA  CE 05 00          dec     tile
-  208  00:85CD  AD 05 00          lda     tile
-  209  00:85D0  8D 07 20          sta     $2007           ; update the tile
-  210                     
-  211  00:85D3  60                rts
-  212                     
+   33  00:03B2                    add16   idx16, tmp_size ; move past the author string
+   34                     
+   35  00:83C5  A0 03             ldy     #3              ; MSB of guy x
+   36  00:03C7                    mov     [idx16], Y, gx
+   37  00:03CC                    add16   idx16, #4
+   38  00:83DD  A0 03             ldy     #3              ; MSB of guy y
+   39  00:03DF                    mov     [idx16], Y, gy
+   40  00:03E4                    add16   idx16, #4
+   41                     
+   42                                     
+   43                             ;; start rledecoding
+   44  00:03F5                    mov16   #tiles, tmp_addr
+   45  00:83FF  20 00 80          jsr     rledecode
+   46                     
+   47                     
+   48  00:0402                    debug_p ds_tiles
+   49                     ;       mov     #tiles, debug_num
+   50                     ;       mov     (#tiles)+1, debug_num
+   51  00:8421  A2 00             ldx     #0
+   52  00:8423  A0 00             ldy     #0
+   53  00:8425            .tile_print:    
+   54  00:8425  BD 07 00          lda     tiles, X
+   55  00:8428  69 20             adc     #32
+   56  00:842A  8D 00 00          sta     debug_str
+   57  00:842D  C8                iny
+   58  00:842E  98                tya
+   59  00:842F  C9 12             cmp     #18
+   60  00:8431  D0 07             bne     .no_newline
+   61  00:0433                    mov     #10, debug_str
+   62  00:8438  A0 00             ldy     #0
+   63  00:843A            .no_newline:
+   64  00:843A  E8                inx
+   65  00:843B  8A                txa
+   66  00:843C  C9 B4             cmp     #180
+   67  00:843E  D0 E5             bne     .tile_print
+   68  00:0440                    mov     #0, debug_str
+   69                             
+   70  00:0445                    mov16   #otiles, tmp_addr
+   71  00:844F  20 00 80          jsr     rledecode
+   72  00:0452                    mov16   #dests, tmp_addr
+   73  00:845C  20 00 80          jsr     rledecode
+   74  00:045F                    mov16   #flags, tmp_addr
+   75  00:8469  20 00 80          jsr     rledecode
+   76                     
+   77  00:846C  60                rts
+   78                                     
+   79                             
+   80  00:846D            draw_level:
+   81  00:846D  20 28 86          jsr     ppu_off
+   82  00:0470                    debug_p ds_draw_level
+   83                             ;; assumes load_level just called
+   84                                     
+   85  00:048F                    mov     #0, tile_pos
+   86  00:8494  AD 04 00  .loop:  lda     tile_pos
+   87  00:8497  C9 B4             cmp     #180
+   88  00:8499  F0 20             beq     .done
+   89  00:849B  89 04             bit     #%00000100
+   90  00:849D  D0 00             bne     .continue
+   91  00:849F            .continue:      
+   92  00:849F  AE 04 00          ldx     tile_pos
+   93                     
+   94                             ;; get the tile
+   95  00:84A2  BD 07 00          lda     tiles, X
+   96  00:84A5  AA                tax
+   97  00:84A6  BD 10 C8          lda     tile_name_table, X
+   98  00:84A9  8D 05 00          sta     tile
+   99  00:84AC  BD 43 C8          lda     tile_attr_table, X
+  100  00:84AF  8D 06 00          sta     tile+1  
+  101                     
+  102  00:84B2  20 BF 84          jsr     draw_tile
+  103  00:84B5  EE 04 00          inc     tile_pos
+  104  00:84B8  4C 94 84          jmp     .loop
+  105                     
+  106  00:84BB  20 F8 85  .done:  jsr     ppu_on          
+  107  00:84BE  60                rts
+  108                     
+  109                     
+  110  00:84BF            draw_tile:
+  111           00C6      screen_pos .equ tmp16
+  112  00:84BF  AE 04 00          ldx     tile_pos
+  113  00:04C2                    mov     tile_pos_table_2, X, screen_pos+1
+  114  00:04C8                    mov     tile_pos_table_1, X, screen_pos
+  115                     
+  116  00:04CE                    add16   screen_pos, #$20C0
+  117                     
+  118  00:84DF  AD C6 00          lda     screen_pos
+  119  00:84E2  0A                asl     a
+  120  00:84E3  AD C7 00          lda     screen_pos+1
+  121  00:84E6  2A                rol     a
+  122  00:84E7  29 07             and     #%00000111
+  123  00:84E9  0A                asl     a
+  124  00:84EA  0A                asl     a
+  125  00:84EB  0A                asl     a
+  126  00:84EC  8D C9 00          sta     tmp16_2+1
+  127  00:84EF  AD C6 00          lda     screen_pos
+  128  00:84F2  29 1C             and     #%00011100
+  129  00:84F4  4A                lsr     a
+  130  00:84F5  4A                lsr     a
+  131  00:84F6  0D C9 00          ora     tmp16_2+1
+  132  00:84F9  69 C0             adc     #$C0    
+  133                     
+  134  00:84FB  8D C1 00          sta     tmp
+  135  00:84FE  AD C7 00          lda     screen_pos+1
+  136  00:8501  29 FC             and     #%11111100
+  137  00:8503  18                clc
+  138  00:8504  69 03             adc     #$3     
+  139  00:8506  8D 06 20          sta     $2006           ; set address of thing
+  140  00:8509  A8                tay
+  141  00:850A  AD C1 00          lda     tmp
+  142  00:850D  8D 06 20          sta     $2006   
+  143  00:8510  AE 07 20          ldx     $2007           ; invalid data
+  144  00:8513  AE 07 20          ldx     $2007           ; correct data
+  145  00:8516  8C 06 20          sty     $2006           ; reset address
+  146  00:8519  8D 06 20          sta     $2006
+  147                     
+  148  00:851C  AD C6 00          lda     screen_pos      ; find the bit
+  149  00:851F  29 42             and     #%01000010
+  150  00:8521  D0 12             bne     .test1
+  151  00:8523  AD 06 00          lda     tile+1
+  152  00:8526  29 03             and     #%00000011
+  153  00:8528  8D C1 00          sta     tmp
+  154  00:852B  8A                txa
+  155  00:852C  0D C1 00          ora     tmp
+  156  00:852F  8D 07 20          sta     $2007           ; set the color
+  157  00:8532  4C 70 85          jmp     .update_tile
+  158                     
+  159  00:8535  C9 02     .test1: cmp     #%00000010
+  160  00:8537  D0 12             bne     .test2
+  161  00:8539  AD 06 00          lda     tile+1
+  162  00:853C  29 0C             and     #%00001100
+  163  00:853E  8D C1 00          sta     tmp
+  164  00:8541  8A                txa
+  165  00:8542  0D C1 00          ora     tmp
+  166  00:8545  8D 07 20          sta     $2007
+  167  00:8548  4C 70 85          jmp     .update_tile
+  168                     
+  169  00:854B  C9 40     .test2: cmp     #%01000000
+  170  00:854D  D0 12             bne     .test3
+  171  00:854F  AD 06 00          lda     tile+1
+  172  00:8552  29 30             and     #%00110000
+  173  00:8554  8D C1 00          sta     tmp
+  174  00:8557  8A                txa
+  175  00:8558  0D C1 00          ora     tmp
+  176  00:855B  8D 07 20          sta     $2007
+  177  00:855E  4C 70 85          jmp     .update_tile
+  178                     
+  179  00:8561  AD 06 00  .test3: lda     tile+1
+  180  00:8564  29 C0             and     #%11000000
+  181  00:8566  8D C1 00          sta     tmp
+  182  00:8569  8A                txa
+  183  00:856A  0D C1 00          ora     tmp
+  184  00:856D  8D 07 20          sta     $2007
+  185                             
+  186                     
+  187  00:8570            .update_tile:                                           
+  188  00:8570  AD C7 00          lda     tmp16+1
+  189  00:8573  8D 06 20          sta     $2006
+  190  00:8576  AD C6 00          lda     tmp16
+  191  00:8579  8D 06 20          sta     $2006
+  192  00:857C  AD 05 00          lda     tile
+  193  00:857F  8D 07 20          sta     $2007           ; update the tile
+  194                     
+  195  00:0582                    add16   tmp16, #1       ; next part (right)
+  196  00:8593  AD C7 00          lda     tmp16+1
+  197  00:8596  8D 06 20          sta     $2006
+  198  00:8599  AD C6 00          lda     tmp16
+  199  00:859C  8D 06 20          sta     $2006
+  200  00:859F  EE 05 00          inc     tile
+  201  00:85A2  AD 05 00          lda     tile
+  202  00:85A5  8D 07 20          sta     $2007           ; update the tile
+  203                     
+  204  00:05A8                    add16   tmp16, #$20     ; next part (down)
+  205  00:85B9  AD C7 00          lda     tmp16+1
+  206  00:85BC  8D 06 20          sta     $2006
+  207  00:85BF  AD C6 00          lda     tmp16
+  208  00:85C2  8D 06 20          sta     $2006
+  209  00:85C5  AD 05 00          lda     tile
+  210  00:85C8  18                clc
+  211  00:85C9  69 10             adc     #$10
+  212  00:85CB  8D 05 00          sta     tile
+  213  00:85CE  8D 07 20          sta     $2007           ; update the tile
+  214                     
+  215  00:05D1                    add16   tmp16, #$FFFF   ; last part (left)
+  216  00:85E2  AD C7 00          lda     tmp16+1
+  217  00:85E5  8D 06 20          sta     $2006
+  218  00:85E8  AD C6 00          lda     tmp16
+  219  00:85EB  8D 06 20          sta     $2006
+  220  00:85EE  CE 05 00          dec     tile
+  221  00:85F1  AD 05 00          lda     tile
+  222  00:85F4  8D 07 20          sta     $2007           ; update the tile
+  223                     
+  224  00:85F7  60                rts
+  225                     
 #[1]   escape.asm
 #[2]   ppu.asm
    68                             .include "ppu.asm"      
-    1  00:85D4            ppu_on:
-    2  00:05D4                    debug_p ds_ppu_on
-    3  00:85F3  20 C9 C1          jsr     vwait
-    4  00:85F6  A9 80             lda     #%10000000
-    5  00:85F8  8D 00 20          sta     $2000   
-    6  00:85FB  20 C9 C1          jsr     vwait
-    7  00:85FE  A9 1E             lda     #%00011110
-    8  00:8600  8D 01 20          sta     $2001
+    1  00:85F8            ppu_on:
+    2  00:05F8                    debug_p ds_ppu_on
+    3  00:8617  20 CC C1          jsr     vwait
+    4  00:861A  A9 80             lda     #%10000000
+    5  00:861C  8D 00 20          sta     $2000   
+    6  00:861F  20 CC C1          jsr     vwait
+    7  00:8622  A9 1E             lda     #%00011110
+    8  00:8624  8D 01 20          sta     $2001
     9                     
-   10  00:8603  60                rts
+   10  00:8627  60                rts
    11                     
-   12  00:8604            ppu_off:
-   13  00:0604                    debug_p ds_ppu_off
-   14  00:8623  20 C9 C1          jsr     vwait
-   15  00:8626  A9 00             lda     #0
-   16  00:8628  8D 00 20          sta     $2000
-   17  00:862B  8D 01 20          sta     $2001
+   12  00:8628            ppu_off:
+   13  00:0628                    debug_p ds_ppu_off
+   14  00:8647  20 CC C1          jsr     vwait
+   15  00:864A  A9 00             lda     #0
+   16  00:864C  8D 00 20          sta     $2000
+   17  00:864F  8D 01 20          sta     $2001
    18                     
-   19  00:862E  60                rts
+   19  00:8652  60                rts
 #[1]   escape.asm
    69                     
    70           0001              .bank   1
@@ -861,14 +874,14 @@
    79                                     
    80  02:C022  78        start:  sei
    81                     
-   82  02:C023  20 C9 C1          jsr     vwait   
-   83  02:C026  20 04 86          jsr     ppu_off
-   84  02:C029  20 CF C1          jsr     init_sprite_memory
+   82  02:C023  20 CC C1          jsr     vwait   
+   83  02:C026  20 28 86          jsr     ppu_off
+   84  02:C029  20 D2 C1          jsr     init_sprite_memory
    85                             
    86  02:802C                    debug_p ds_begin
    87                             
-   88  02:C04B  20 C9 C1          jsr     vwait   
-   89  02:C04E  20 C9 C1          jsr     vwait
+   88  02:C04B  20 CC C1          jsr     vwait   
+   89  02:C04E  20 CC C1          jsr     vwait
    90                     
    91                             
    92                     
@@ -939,11 +952,11 @@
    54  02:C0C7  8D 07 20          sta     $2007
 #[1]   escape.asm
   103                                     
-  104  02:80CA                    mov     #12, level_num
+  104  02:80CA                    mov     #0, level_num
   105  02:C0CF  20 DB C0          jsr     choose_level
   106                             
   107                     ;;; ppu on
-  108  02:C0D2  20 D4 85          jsr     ppu_on
+  108  02:C0D2  20 F8 85          jsr     ppu_on
   109                             
   110                             
   111  02:C0D5            main_loop:
@@ -953,95 +966,97 @@
   115                             
   116  02:C0DB            choose_level:
   117  02:C0DB  AD BB 00          lda     level_num
-  118  02:C0DE  D0 0D             bne     .l1
-  119  02:80E0                    mov16   #sample_level01, level_addr
-  120  02:C0EA  4C BF C1          jmp     .go
-  121  02:C0ED  AD BB 00  .l1:    lda     level_num
-  122  02:C0F0  C9 01             cmp     #1
-  123  02:C0F2  D0 0D             bne     .l2
-  124  02:80F4                    mov16   #sample_level02, level_addr
-  125  02:C0FE  4C BF C1          jmp     .go
-  126  02:C101  AD BB 00  .l2:    lda     level_num
-  127  02:C104  C9 02             cmp     #2
-  128  02:C106  D0 0D             bne     .l3
-  129  02:8108                    mov16   #sample_level02, level_addr
-  130  02:C112  4C BF C1          jmp     .go
-  131  02:C115  AD BB 00  .l3:    lda     level_num
-  132  02:C118  C9 03             cmp     #3
-  133  02:C11A  D0 0D             bne     .l4
-  134  02:811C                    mov16   #sample_level03, level_addr
-  135  02:C126  4C BF C1          jmp     .go
-  136  02:C129  AD BB 00  .l4:    lda     level_num
-  137  02:C12C  C9 04             cmp     #4
-  138  02:C12E  D0 0D             bne     .l5
-  139  02:8130                    mov16   #sample_level04, level_addr
-  140  02:C13A  4C BF C1          jmp     .go
-  141  02:C13D  AD BB 00  .l5:    lda     level_num
-  142  02:C140  C9 05             cmp     #5
-  143  02:C142  D0 0D             bne     .l6
-  144  02:8144                    mov16   #sample_level05, level_addr
-  145  02:C14E  4C BF C1          jmp     .go
-  146  02:C151  AD BB 00  .l6:    lda     level_num
-  147  02:C154  C9 06             cmp     #6
-  148  02:C156  D0 0D             bne     .l7
-  149  02:8158                    mov16   #sample_level06, level_addr
-  150  02:C162  4C BF C1          jmp     .go
-  151  02:C165  AD BB 00  .l7:    lda     level_num
-  152  02:C168  C9 07             cmp     #7
-  153  02:C16A  D0 0D             bne     .l8
-  154  02:816C                    mov16   #sample_level07, level_addr
-  155  02:C176  4C BF C1          jmp     .go
-  156  02:C179  AD BB 00  .l8:    lda     level_num
-  157  02:C17C  C9 08             cmp     #8
-  158  02:C17E  D0 0D             bne     .l9
-  159  02:8180                    mov16   #sample_level08, level_addr
-  160  02:C18A  4C BF C1          jmp     .go
-  161  02:C18D  AD BB 00  .l9:    lda     level_num
-  162  02:C190  C9 09             cmp     #9
-  163  02:C192  D0 0D             bne     .l10
-  164  02:8194                    mov16   #sample_level09, level_addr
-  165  02:C19E  4C BF C1          jmp     .go
-  166  02:C1A1  AD BB 00  .l10:   lda     level_num
-  167  02:C1A4  C9 0A             cmp     #10
-  168  02:C1A6  D0 0D             bne     .l11
-  169  02:81A8                    mov16   #sample_level10, level_addr
-  170  02:C1B2  4C BF C1          jmp     .go
-  171  02:81B5            .l11:   mov16   #sample_level11, level_addr
-  172                                     
-  173  02:C1BF            .go:    
-  174  02:C1BF  20 EA 82          jsr     load_level
-  175  02:C1C2  20 50 81          jsr     draw_guy
-  176  02:C1C5  20 49 84          jsr     draw_level
-  177                     
-  178  02:C1C8  60                rts
-  179                             
-  180                     
+  118  02:C0DE  8D 01 00          sta     debug_num
+  119                             
+  120  02:C0E1  D0 0D             bne     .l1
+  121  02:80E3                    mov16   #sample_level01, level_addr
+  122  02:C0ED  4C C2 C1          jmp     .go
+  123  02:C0F0  AD BB 00  .l1:    lda     level_num
+  124  02:C0F3  C9 01             cmp     #1
+  125  02:C0F5  D0 0D             bne     .l2
+  126  02:80F7                    mov16   #sample_level02, level_addr
+  127  02:C101  4C C2 C1          jmp     .go
+  128  02:C104  AD BB 00  .l2:    lda     level_num
+  129  02:C107  C9 02             cmp     #2
+  130  02:C109  D0 0D             bne     .l3
+  131  02:810B                    mov16   #sample_level02, level_addr
+  132  02:C115  4C C2 C1          jmp     .go
+  133  02:C118  AD BB 00  .l3:    lda     level_num
+  134  02:C11B  C9 03             cmp     #3
+  135  02:C11D  D0 0D             bne     .l4
+  136  02:811F                    mov16   #sample_level03, level_addr
+  137  02:C129  4C C2 C1          jmp     .go
+  138  02:C12C  AD BB 00  .l4:    lda     level_num
+  139  02:C12F  C9 04             cmp     #4
+  140  02:C131  D0 0D             bne     .l5
+  141  02:8133                    mov16   #sample_level04, level_addr
+  142  02:C13D  4C C2 C1          jmp     .go
+  143  02:C140  AD BB 00  .l5:    lda     level_num
+  144  02:C143  C9 05             cmp     #5
+  145  02:C145  D0 0D             bne     .l6
+  146  02:8147                    mov16   #sample_level05, level_addr
+  147  02:C151  4C C2 C1          jmp     .go
+  148  02:C154  AD BB 00  .l6:    lda     level_num
+  149  02:C157  C9 06             cmp     #6
+  150  02:C159  D0 0D             bne     .l7
+  151  02:815B                    mov16   #sample_level06, level_addr
+  152  02:C165  4C C2 C1          jmp     .go
+  153  02:C168  AD BB 00  .l7:    lda     level_num
+  154  02:C16B  C9 07             cmp     #7
+  155  02:C16D  D0 0D             bne     .l8
+  156  02:816F                    mov16   #sample_level07, level_addr
+  157  02:C179  4C C2 C1          jmp     .go
+  158  02:C17C  AD BB 00  .l8:    lda     level_num
+  159  02:C17F  C9 08             cmp     #8
+  160  02:C181  D0 0D             bne     .l9
+  161  02:8183                    mov16   #sample_level08, level_addr
+  162  02:C18D  4C C2 C1          jmp     .go
+  163  02:C190  AD BB 00  .l9:    lda     level_num
+  164  02:C193  C9 09             cmp     #9
+  165  02:C195  D0 0D             bne     .l10
+  166  02:8197                    mov16   #sample_level09, level_addr
+  167  02:C1A1  4C C2 C1          jmp     .go
+  168  02:C1A4  AD BB 00  .l10:   lda     level_num
+  169  02:C1A7  C9 0A             cmp     #10
+  170  02:C1A9  D0 0D             bne     .l11
+  171  02:81AB                    mov16   #sample_level10, level_addr
+  172  02:C1B5  4C C2 C1          jmp     .go
+  173  02:81B8            .l11:   mov16   #sample_level11, level_addr
+  174                                     
+  175  02:C1C2            .go:    
+  176  02:C1C2  20 EA 82          jsr     load_level
+  177  02:C1C5  20 50 81          jsr     draw_guy
+  178  02:C1C8  20 6D 84          jsr     draw_level
+  179                     
+  180  02:C1CB  60                rts
   181                             
-  182  02:C1C9            vwait:  
-  183  02:C1C9  AD 02 20          lda     $2002
-  184  02:C1CC  10 FB             bpl     vwait
-  185                     
-  186  02:C1CE  60                rts
+  182                     
+  183                             
+  184  02:C1CC            vwait:  
+  185  02:C1CC  AD 02 20          lda     $2002
+  186  02:C1CF  10 FB             bpl     vwait
   187                     
-  188                     
+  188  02:C1D1  60                rts
   189                     
-  190  02:C1CF            init_sprite_memory:
-  191  02:C1CF  A2 FF             ldx     #$FF
-  192  02:C1D1  F0 06     .loop:  beq     .end    
-  193  02:81D3                    mov     #$FF, sprite, X
-  194  02:C1D8  CA                dex
-  195  02:C1D9  60        .end:   rts
-  196                     
-  197                     
-  198                             
-  199                                     
-  200                     ;;; some data
-  201                     ;;; data
-  202           E000              .data
-  203           0002              .bank   2
-  204           C800              .org    $C800
+  190                     
+  191                     
+  192  02:C1D2            init_sprite_memory:
+  193  02:C1D2  A2 FF             ldx     #$FF
+  194  02:C1D4  F0 06     .loop:  beq     .end    
+  195  02:81D6                    mov     #$FF, sprite, X
+  196  02:C1DB  CA                dex
+  197  02:C1DC  60        .end:   rts
+  198                     
+  199                     
+  200                             
+  201                                     
+  202                     ;;; some data
+  203                     ;;; data
+  204           E000              .data
+  205           0002              .bank   2
+  206           C800              .org    $C800
 #[2]   tiles.inc
-  205                             .include "tiles.inc"
+  207                             .include "tiles.inc"
     1                     ;;; tiles, as defined in level.h
     2                             
     3           0000              .rsset $0
@@ -1285,10 +1300,10 @@
        02:C9DB  02 06 06  
   133                             
 #[1]   escape.asm
-  206                     
-  207                     
-  208  02:C9DE            levels: 
-  209  02:C9DE  F6 C9             .dw sample_level01, ...
+  208                     
+  209                     
+  210  02:C9DE            levels: 
+  211  02:C9DE  F6 C9             .dw sample_level01, ...
        02:C9E0  9F CA     
        02:C9E2  40 CB     
        02:C9E4  C9 CB     
@@ -1300,80 +1315,80 @@
        02:C9F0  A9 CF     
        02:C9F2  6D D0     
        02:C9F4  31 D1     
-  221                     
-  222  02:C9F6            sample_level01: 
-  223  02:C9F6                    .incbin "levels/tutor01.esx"            
-  224  02:CA9F            sample_level02: 
-  225  02:CA9F                    .incbin "levels/tutor02.esx"            
-  226  02:CB40            sample_level03: 
-  227  02:CB40                    .incbin "levels/tutor03.esx"            
-  228  02:CBC9            sample_level04: 
-  229  02:CBC9                    .incbin "levels/tutor04.esx"            
-  230  02:CC83            sample_level05: 
-  231  02:CC83                    .incbin "levels/tutor05.esx"            
-  232  02:CD34            sample_level06: 
-  233  02:CD34                    .incbin "levels/tutor06.esx"            
-  234  02:CDB7            sample_level07: 
-  235  02:CDB7                    .incbin "levels/tutor07.esx"            
-  236  02:CE4F            sample_level08: 
-  237  02:CE4F                    .incbin "levels/tutor08.esx"            
-  238  02:CF0F            sample_level09: 
-  239  02:CF0F                    .incbin "levels/tutor09.esx"            
-  240  02:CFA9            sample_level10: 
-  241  02:CFA9                    .incbin "levels/tutor10.esx"            
-  242  02:D06D            sample_level11: 
-  243  02:D06D                    .incbin "levels/tutor11.esx"            
-  244  02:D131            sample_level12: 
-  245  02:D131                    .incbin "levels/tutor12.esx"            
-  246                     
-  247                     
-  248  02:D209  62 65 67  ds_begin .db    "begin",0
+  223                     
+  224  02:C9F6            sample_level01: 
+  225  02:C9F6                    .incbin "levels/tutor01.esx"            
+  226  02:CA9F            sample_level02: 
+  227  02:CA9F                    .incbin "levels/tutor02.esx"            
+  228  02:CB40            sample_level03: 
+  229  02:CB40                    .incbin "levels/tutor03.esx"            
+  230  02:CBC9            sample_level04: 
+  231  02:CBC9                    .incbin "levels/tutor04.esx"            
+  232  02:CC83            sample_level05: 
+  233  02:CC83                    .incbin "levels/tutor05.esx"            
+  234  02:CD34            sample_level06: 
+  235  02:CD34                    .incbin "levels/tutor06.esx"            
+  236  02:CDB7            sample_level07: 
+  237  02:CDB7                    .incbin "levels/tutor07.esx"            
+  238  02:CE4F            sample_level08: 
+  239  02:CE4F                    .incbin "levels/tutor08.esx"            
+  240  02:CF0F            sample_level09: 
+  241  02:CF0F                    .incbin "levels/tutor09.esx"            
+  242  02:CFA9            sample_level10: 
+  243  02:CFA9                    .incbin "levels/tutor10.esx"            
+  244  02:D06D            sample_level11: 
+  245  02:D06D                    .incbin "levels/tutor11.esx"            
+  246  02:D131            sample_level12: 
+  247  02:D131                    .incbin "levels/tutor12.esx"            
+  248                     
+  249                     
+  250  02:D209  62 65 67  ds_begin .db    "begin",0
        02:D20C  69 6E 00  
-  249  02:D20F  72 6C 65  ds1:    .db     "rledecode",0
+  251  02:D20F  72 6C 65  ds1:    .db     "rledecode",0
        02:D212  64 65 63  
        02:D215  6F 64 65  
        02:D218  00        
-  250  02:D219  70 70 75  ds_ppu_off:     .db "ppu_off",0
+  252  02:D219  70 70 75  ds_ppu_off:     .db "ppu_off",0
        02:D21C  5F 6F 66  
        02:D21F  66 00     
-  251  02:D221  70 70 75  ds_ppu_on:      .db     "ppu_on",0
+  253  02:D221  70 70 75  ds_ppu_on:      .db     "ppu_on",0
        02:D224  5F 6F 6E  
        02:D227  00        
-  252  02:D228  72 75 6E  ds_run: .db     "run",0
+  254  02:D228  72 75 6E  ds_run: .db     "run",0
        02:D22B  00        
-  253  02:D22C  61 72 75  ds_antirun:     .db     "arun",0
+  255  02:D22C  61 72 75  ds_antirun:     .db     "arun",0
        02:D22F  6E 00     
-  254  02:D231  6E 6D 69  ds_nmi: .db     "nmi",0
+  256  02:D231  6E 6D 69  ds_nmi: .db     "nmi",0
        02:D234  00        
-  255  02:D235  78 00     ds_x:   .db     "x",0
-  256  02:D237  79 00     ds_y:   .db     "y",0
-  257  02:D239  69 00     ds_i:   .db     "i",0
-  258  02:D23B  74 6D 70  ds_tmpaddr:     .db     "tmp_addr",0
+  257  02:D235  78 00     ds_x:   .db     "x",0
+  258  02:D237  79 00     ds_y:   .db     "y",0
+  259  02:D239  69 00     ds_i:   .db     "i",0
+  260  02:D23B  74 6D 70  ds_tmpaddr:     .db     "tmp_addr",0
        02:D23E  5F 61 64  
        02:D241  64 72 00  
-  259  02:D244  74 69 6C  ds_tiles:       .db     "tiles",0
+  261  02:D244  74 69 6C  ds_tiles:       .db     "tiles",0
        02:D247  65 73 00  
-  260  02:D24A  64 72 61  ds_draw_guy     .db     "draw_guy",0
+  262  02:D24A  64 72 61  ds_draw_guy     .db     "draw_guy",0
        02:D24D  77 5F 67  
        02:D250  75 79 00  
-  261  02:D253  6C 6F 61  ds_load_level   .db     "load level",0
+  263  02:D253  6C 6F 61  ds_load_level   .db     "load level",0
        02:D256  64 20 6C  
        02:D259  65 76 65  
        02:D25C  6C 00     
-  262  02:D25E  64 72 61  ds_draw_level   .db     "draw level",0
+  264  02:D25E  64 72 61  ds_draw_level   .db     "draw level",0
        02:D261  77 20 6C  
        02:D264  65 76 65  
        02:D267  6C 00     
-  263                                             
-  264                     ;;; vectors
-  265           0003              .bank   3
-  266           FFFA              .org    $FFFA
-  267  03:FFFA  02 C0             .dw     nmi,start,intr
+  265                                                     
+  266                     ;;; vectors
+  267           0003              .bank   3
+  268           FFFA              .org    $FFFA
+  269  03:FFFA  02 C0             .dw     nmi,start,intr
        03:FFFC  22 C0     
        03:FFFE  00 C0     
-  268                     
-  269                     
-  270           0004              .bank   4
+  270                     
   271                     
-  272  04:0000                    .incbin "escape.chr"
-  273  04:1000                    .incbin "debug.chr"
+  272           0004              .bank   4
+  273                     
+  274  04:0000                    .incbin "escape.chr"
+  275  04:1000                    .incbin "debug.chr"

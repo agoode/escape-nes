@@ -6,15 +6,17 @@ load_level:
 			
 	mov16	level_addr, idx16
 	ldy	#0
-	mov	[idx16], Y, tmp
+	mov	[idx16], Y, debug_str
 	iny
-	mov	[idx16], Y, tmp
+	mov	[idx16], Y, debug_str
 	iny
-	mov	[idx16], Y, tmp
+	mov	[idx16], Y, debug_str
 	iny
-	mov	[idx16], Y, tmp
+	mov	[idx16], Y, debug_str
+	mov	#0, debug_str
 	ldy	#15		; ESXL + width + height + MSB of size of title
 	mov	[idx16], Y, tmp_size	; size of title string
+	sta	debug_num
 	add16	idx16, #16		; move to start of title
 
 	;; copy the title string
@@ -47,12 +49,23 @@ load_level:
 ; 	mov	#tiles, debug_num
 ; 	mov	(#tiles)+1, debug_num
 	ldx	#0
+	ldy	#0
 .tile_print:	
-; 	mov	tiles, X, debug_num
+	lda	tiles, X
+	adc	#32
+	sta	debug_str
+	iny
+	tya
+	cmp	#18
+	bne	.no_newline
+	mov	#10, debug_str
+	ldy	#0
+.no_newline:
 	inx
 	txa
 	cmp	#180
 	bne	.tile_print
+	mov	#0, debug_str
 	
 	mov16	#otiles, tmp_addr
   	jsr	rledecode

@@ -280,6 +280,8 @@ ds_move_right	.db	"moving guy RIGHT",0
 ds_move_down	.db	"moving guy DOWN",0
 ds_s1_s0	.db	"s0->s1?",0
 ds_s1_s2	.db	"s2->s1?",0
+ds_tileat	.db	"tileat",0
+ds_xy_to_index	.db	"xy_to_index",0
 									
 ;;; vectors
 	.bank	3

@@ -86,3 +86,32 @@ travel_func:
 .yes:	lda	#1
 	rts
 
+
+tileat:	.macro
+	ldx	\1
+	ldy	\2
+	jsr	tileat_func
+	.endm
+
+tileat_func:
+	jsr	xy_to_index
+	tay
+	mov16	#tiles,tile
+	lda	[tile], Y
+	debug_p ds_tileat
+	sta	debug_num
+	rts
+
+
+xy_to_index:
+	debug_p	ds_xy_to_index
+	clc
+	txa
+
+.yloop:	dey
+	bmi	.done
+	adc	#18
+	jmp	.yloop
+.done:
+	sta	debug_num
+	rts

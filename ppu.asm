@@ -2,8 +2,8 @@ ppu_on:
 	debug_p	ds_ppu_on
 	lda	#%10000000
  	sta	$2000	
-	lda	#%00011110
- 	sta	$2001
+; 	lda	#%00011110
+;  	sta	$2001
 
 	rts
 

@@ -12,8 +12,8 @@ handle_joy:
 	lda	num_tiles_changed
 	beq	.ok
 	rts
-	
-.ok:	
+
+.ok:
 	;; clear
 	lda	#0
 	sta	cur_joy_state
@@ -100,29 +100,49 @@ handle_joy:
 	and	#j_right
 	beq	.act1
 	mov	#dir_right,newd
+
+	;; expensive work ahead
+	jsr	mask_nmi
+	
 	jsr	do_move
 	jsr	draw_guy
+	jsr	ppu_on
 
 .act1:	lda	last_joy_state
 	and	#j_left
 	beq	.act2
 	mov	#dir_left,newd
+
+	;; expensive work ahead
+	jsr	mask_nmi
+	
 	jsr	do_move
 	jsr	draw_guy
+	jsr	ppu_on
 
 .act2:	lda	last_joy_state
 	and	#j_down
 	beq	.act3
 	mov	#dir_down,newd
+
+	;; expensive work ahead
+	jsr	mask_nmi
+	
 	jsr	do_move
 	jsr	draw_guy
+	jsr	ppu_on
 
 .act3:	lda	last_joy_state
 	and	#j_up
 	beq	.act4
 	mov	#dir_up,newd
+
+	;; expensive work ahead
+	jsr	mask_nmi
+	
 	jsr	do_move
 	jsr	draw_guy
+	jsr	ppu_on
 
 .act4:	lda	last_joy_state
 	and	#j_start

@@ -62,7 +62,6 @@ x_scroll: .ds	1
 	
 level_addr:	.ds	3
 
-sprite_dma_ok:	.ds	1		
 cur_joy_state:	.ds	1
 last_joy_state:	.ds	1
 tiles_drawn:	.ds	1

@@ -45,7 +45,6 @@ update_scroll_from_guy:
 draw_guy:
 	debug_p	ds_draw_guy
 	tileat	gx,gy
-	mov	#0,sprite_dma_ok
 	lda	gx
 	asl	a
 	asl	a
@@ -256,6 +255,5 @@ draw_guy:
 	jmp	.done
 
 .done:
-	mov #1,sprite_dma_ok
 	rts
 

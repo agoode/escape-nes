@@ -14,13 +14,9 @@ nmi:
 .ok:	
 	mov	#0,vwait_expected
 
-	lda	sprite_dma_ok	; it's not always right to do DMA
-	beq	.no_dma
-
 	lda	#sprite/$100	; sprite
 	sta	$4014
 
-.no_dma:
 	lda	#4
 	sta	drawing_limit
 	jsr	copy_some_tiles_to_ppu
@@ -36,6 +32,11 @@ nmi:
 	lda	#0
 	sta	$2005
 
+	;; activate ppu after scroll
+	lda	#%00011110		
+	sta	$2001
+
+	
 	lda	#1
 	sta	nmi_finished
 

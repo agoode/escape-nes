@@ -144,7 +144,6 @@ settile: .macro
 	ldy	\2
 	mov	\3,new_tile
 	jsr	settile_func
-;	jsr	draw_level
 	.endm
 
 settile_func:	
@@ -153,8 +152,8 @@ settile_func:
 	tax
 	lda	new_tile
 	sta	tiles, X
-	jsr	update_tile_buffer
-	rts
+	jmp	update_tile_buffer
+	
 
 checkstepoff:	.macro
 	ldx	\1
@@ -252,19 +251,14 @@ step_table_target .equ tmp16
 	inx
 	lda	step_table, X
 	sta	step_table_target+1
-	
+
 	jmp	[step_table_target]
 
 
 panel_step:	
 plain_move:
 	debug_p	ds_plain_move
-	checkstepoff	gx,gy	
-	lda	doswap
-	beq	.noswap
-	jsr	swapo
 
-.noswap:	
 	mov	newx,gx
 	debug_num
 	mov	newy,gy
@@ -439,8 +433,10 @@ push_green:
 electric_off:
 	;; iterate
 	ldx	#0
+.e_loop:
 	
-	
+.done:
+	jsr	ppu_on
 	jmp	make_electric_off_sound
 	
 no_move:

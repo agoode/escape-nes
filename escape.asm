@@ -183,6 +183,7 @@ main_loop:
 	lda	end_sound_made
 	bne	.no_exit_sound
 	jsr	make_exit_sound
+	draw_text_as_sprites	ds_winner
 	lda	#1
 	sta	end_sound_made
 .no_exit_sound:	
@@ -379,8 +380,9 @@ ds_not_gpanel	.db	"not gpanel",0
 ds_not_floor	.db	"not floor",0
 ds_where	.db	"where?",0
 ds_step_table	.db	"going into step table!",0
-ds_laser_beam	.db	"lasered!",0
-	
+ds_laser_beam	.db	"LASERED!",0
+ds_winner	.db	"SUCCESS!",0
+		
 	.endif
 									
 ;;; vectors

@@ -143,3 +143,35 @@ ppuw	.macro
 
 
 
+draw_text_as_sprites:	.macro
+	ldx	#0
+
+.start\@:
+	clc
+	txa
+	asl	A
+	asl	A
+	tay
+	
+	lda	\1, X
+	beq	.done\@
+	adc	#$80
+	sta	sprite+33, Y
+
+	lda	#25
+	sta	sprite+32, Y
+
+	lda	#1
+	sta	sprite+34, Y
+
+	tya
+	asl	A
+	adc	#10
+	sta	sprite+35, Y
+
+	inx
+	jmp	.start\@
+
+.done\@:
+	
+	.endm

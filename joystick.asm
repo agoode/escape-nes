@@ -103,34 +103,41 @@ handle_joy:
 	beq	.act1
 	mov	#dir_right,newd
 	jsr	handle_direction
+	jmp	.done
 
 .act1:	lda	last_joy_state
 	and	#j_left
 	beq	.act2
 	mov	#dir_left,newd
 	jsr	handle_direction
+	jmp	.done
 
 .act2:	lda	last_joy_state
 	and	#j_down
 	beq	.act3
 	mov	#dir_down,newd
 	jsr	handle_direction
+	jmp	.done
 
 .act3:	lda	last_joy_state
 	and	#j_up
 	beq	.act4
 	mov	#dir_up,newd
 	jsr	handle_direction
+	jmp	.done
 
 .act4:	lda	last_joy_state
 	and	#j_start
 	beq	.act5
 	jsr	handle_start
+	jmp	.done
 	
 .act5:	lda	last_joy_state
 	and	#j_select
 	beq	.act6
 	jsr	handle_select
+	jmp	.done
+
 .act6:	
 .done:
 	lda	cur_joy_state

@@ -10,7 +10,7 @@
 	sta	$2007
 	lda	#$2d		; 50gray
 	sta	$2007
-	lda	#$3d		; 25gray
+	lda	#$10		; 25gray
 	sta	$2007
 	lda	#$38		; orange
 	sta	$2007
@@ -20,7 +20,7 @@
 	sta	$2007
 	lda	#$16		; red
 	sta	$2007
-	lda	#$3d		; gray
+	lda	#$3D		; gray
 	sta	$2007
 	lda	#$28		; yellow
 	sta	$2007
@@ -71,3 +71,7 @@
 	sta	$2007
 	lda	#$30		; white
 	sta	$2007
+
+
+
+

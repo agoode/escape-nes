@@ -261,6 +261,11 @@ draw_guy:
 
 draw_laser_beam:
 	debug_p	ds_laser_beam
+	draw_text_as_sprites	ds_laser_beam
+	;; draw text at top
+	
+
+	
 	;; read guy sprite position
 	lda	sprite
 	sta	ly
@@ -272,7 +277,9 @@ draw_laser_beam:
 	cmp	#dir_up
 	beq	.up
 	cmp	#dir_down
-	beq	.down
+	bne	.not_down
+	jmp	.down
+.not_down:	
 	cmp	#dir_right
 	beq	.right
 	cmp	#dir_left
@@ -306,7 +313,81 @@ draw_laser_beam:
 	rts
 
 .left:
-.up:
-.down:
+	lda	laser_tile
+	sta	sprite+17
+	sta	sprite+21
+
+	lda	lx
+	clc
+	adc	#11
+	sta	sprite+19
+	sta	sprite+23
+	
+	clc
+	lda	ly
+	adc	#1
+	sta	sprite+16
+	adc	#7
+	sta	sprite+20
+	
+	lda	#%10000001
+	sta	sprite+18
+	lda	#%00000001
+	sta	sprite+22
+
 
 	rts
+
+.up:
+	lda	laser_tile+1
+	sta	sprite+17
+	sta	sprite+21
+
+	lda	ly
+	clc
+	adc	#15
+	sta	sprite+16
+	sta	sprite+20
+	
+	clc
+	lda	lx
+	adc	#1
+	sta	sprite+23
+	adc	#7
+	sta	sprite+19
+	
+	lda	#%01000001
+	sta	sprite+18
+	lda	#%00000001
+	sta	sprite+22
+
+
+	rts
+
+.down:
+
+	lda	laser_tile+1
+	sta	sprite+17
+	sta	sprite+21
+
+	lda	ly
+	sec
+	sbc	#6
+	sta	sprite+16
+	sta	sprite+20
+	
+	clc
+	lda	lx
+	adc	#1
+	sta	sprite+23
+	adc	#7
+	sta	sprite+19
+	
+	lda	#%11000001
+	sta	sprite+18
+	lda	#%10000001
+	sta	sprite+22
+
+
+	rts
+

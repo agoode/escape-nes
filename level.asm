@@ -263,6 +263,9 @@ plain_move:
 	debug_num
 	mov	newy,gy
 	debug_num
+
+	jsr	make_step_noise
+	
 	jmp	update_scroll_from_guy
 
 	
@@ -280,26 +283,26 @@ push_block:
 	lda	newd
 	cmp	#dir_up
 	bne	.lr1
-	jmp	.no_move
+	jmp	no_move
 .lr1:	cmp	#dir_down
 	bne	.next1
-	jmp	.no_move
+	jmp	no_move
 
 .ud:
 	lda	newd
 	cmp	#dir_left
 	bne	.ud1
-	jmp	.no_move
+	jmp	no_move
 .ud1:	cmp	#dir_right
 	bne	.next1
-	jmp	.no_move
+	jmp	no_move
 
 	
 .next1:
 	;; check to make sure the block can move
 	travel	newx,newy,newd,destx,desty
 	bne	.next1_1
-	jmp	.no_move
+	jmp	no_move
 
 .next1_1:	
 	;; check the TF_HASPANEL flag
@@ -340,11 +343,11 @@ push_block:
 	lda	target
 	cmp	#T_LR
 	bne	.colored_panel1
-	jmp	.no_move
+	jmp	no_move
 .colored_panel1:
 	cmp	#T_UD
 	bne	.colored_panel2
-	jmp	.no_move
+	jmp	no_move
 
 .colored_panel2:	
 	settile	destx,desty,target
@@ -359,11 +362,11 @@ push_block:
 	lda	target
 	cmp	#T_LR
 	bne	.next4_1
-	jmp	.no_move
+	jmp	no_move
 .next4_1:	
 	cmp	#T_UD
 	bne	.next4_2
-	jmp	.no_move
+	jmp	no_move
 
 .next4_2:	
 	settile	newx,newy,replacement
@@ -375,8 +378,10 @@ push_block:
 	bne	.next6
 	lda	target
 	cmp	#T_GREY
-	bne	.no_move
+	beq	.next5_1
+	jmp	no_move
 
+.next5_1:	
 	settile	destx,desty, #T_FLOOR
 	settile	newx,newy,replacement
 	jmp	plain_move
@@ -384,21 +389,25 @@ push_block:
 .next6:				; regular panel
 	tileat	destx,desty
 	cmp	#T_PANEL
-	bne	.no_move
+	beq	.next6_1
+	jmp	no_move
 
+.next6_1:	
+	
 	lda	target
 	cmp	#T_LR
-	beq	.no_move
+	bne	.next6_2
+	jmp	no_move
+.next6_2:	
 	cmp	#T_UD
-	beq	.no_move
+	bne	.next6_3
+	jmp	no_move
+.next6_3:	
 	mov	#1,doswap
 	settile	destx,desty,target
 	settile	newx,newy,replacement
 	jmp	plain_move
 	
-			
-.no_move:
-	rts
 
 
 
@@ -406,12 +415,12 @@ push_green:
 	;; check to make sure the block can move
 	travel	newx,newy,newd,destx,desty
 	bne	.next1
-	jmp	.no_move
+	jmp	no_move
 
 .next1:
 	tileat	destx,desty
 	cmp	#T_FLOOR
-	bne	.no_move
+	bne	no_move
 
 	;; set stuff
 	settile	destx,desty, #T_BLUE
@@ -419,16 +428,14 @@ push_green:
 
 
 	jmp	plain_move
-.no_move:	
 
-	rts
 
 electric_off:
 	rts
 	
 no_move:
 	debug_p	ds_no_move
-	rts
+	jmp	make_no_move_sound
 
 slide_push:
 	rts

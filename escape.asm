@@ -90,9 +90,10 @@ nmi_finished:	.ds	1
 	.bank	0
 	.org	$8000
 		
-	.include "rle.asm"			
+	.include "rle.asm"
 	.include "joystick.asm"	
 	.include "level.asm"
+	.include "sound.asm"
 	.include "guy.asm"	
 	.include "load-draw-level.asm"
 	.include "ppu.asm"
@@ -124,6 +125,10 @@ start:	sei
 	jsr	vwait
 
 	jsr	zero_ppu_memory
+
+	;; 2A03!
+	lda	#%00001111	; sound enable
+	sta	$4015
 
 ;;; draw item
 

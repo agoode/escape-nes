@@ -1,0 +1,1942 @@
+#[1]   escape.s
+    2                     
+#[2]   arg.mac
+    3                             .include "arg.mac"
+    1           0000      ARG_NONE        .equ 0
+    2           0001      ARG_REG         .equ 1
+    3           0002      ARG_IMMED       .equ 2
+    4           0003      ARG_ABS         .equ 3
+    5           0003      ARG_ABSOLUTE    .equ 3
+    6           0004      ARG_INDIRECT    .equ 4
+    7           0005      ARG_STRING      .equ 5
+    8           0006      ARG_LABEL       .equ 6
+#[1]   escape.s
+#[2]   common.mac
+    4                             .include "common.mac"
+    1                     ; mov src, dst
+    2                     ; dst := [src]
+    3                     mova    .macro
+    4                             sta \1
+    5                             .endm
+    6                     movx    .macro
+    7                             stx \1
+    8                             .endm
+    9                     movy    .macro
+   10                             sty \1
+   11                             .endm
+   12                     mov     .macro
+   13                             .if \?1 = ARG_REG
+   14                             st\1 \2
+   15                             .else
+   16                             lda \1
+   17                             sta \2
+   18                             .endif
+   19                             .endm
+   20                     
+   21                     ; mov16 src16, dst16
+   22                     ; dst16 := [src16]
+   23                     
+   24                     ; mov16 #src16, dst16
+   25                     ; dst16 := src16
+   26                     mov16   .macro
+   27                             .if \?1 = ARG_IMMED
+   28                             mov #low(\1), \2
+   29                             mov #high(\1), \2+1
+   30                             .else
+   31                             mov \1, \2
+   32                             mov \1+1, \2+1
+   33                             .endif
+   34                             .endm
+   35                     
+   36                     ; mov16 src16, dst16
+   37                     ; dst16 := [src16 + x]
+   38                     mov16sx .macro
+   39                             lda \1,x
+   40                             sta \2
+   41                             lda \1+1,x
+   42                             sta \2+1
+   43                             .endm
+   44                     
+   45                     
+   46                     ; add16 dst16, src16
+   47                     ; dst16 := [dst16] + [src16]
+   48                     
+   49                     ; add16 dst16, #val16
+   50                     ; dst16 := [dst16] + val16
+   51                     add16   .macro
+   52                             clc
+   53                             .if \?2 = ARG_IMMED
+   54                             lda \1
+   55                             adc #low(\2)
+   56                             sta \1
+   57                             lda \1+1
+   58                             adc #high(\2)
+   59                             sta \1+1
+   60                             .else
+   61                             lda \1
+   62                             adc \2
+   63                             sta \1
+   64                             lda \1+1
+   65                             adc \2+1
+   66                             sta \1+1
+   67                             .endif
+   68                             .endm
+   69                     
+   70                     ; inc16 dst16
+   71                     ; dst16 := [dst16] + 1
+   72                     inc16   .macro
+   73                             add16 \1, #1
+   74                             .endm
+   75                     
+   76                     ; asr16
+   77                     asl16   .macro
+   78                             asl \1+1
+   79                             rol \1
+   80                             .endm
+   81                     
+   82                     ;; converts pascal style strings to C style
+   83                     ;; src, dst, size
+   84                     strcpyp2c       .macro
+   85                             ldy     #0
+   86                             ldx     \3
+   87                             beq     .endloop\@
+   88                     .loop\@:
+   89                             mov     [\1], Y, \2, Y
+   90                             iny
+   91                             dex
+   92                             bne     .loop\@
+   93                     .endloop\@:
+   94                             mov     #0, \2, Y
+   95                             .endm
+   96                     
+   97           0000      debug .equ 0
+   98                     debug_p .macro
+   99                             .if     debug
+  100                             stx     debug_tmp
+  101                             sta     debug_tmp_2
+  102                             ldx     #0
+  103                     .start\@:
+  104                             lda     \1, X
+  105                             beq     .done\@
+  106                             sta     debug_str
+  107                             inx
+  108                             jmp     .start\@
+  109                     .done\@:
+  110                             lda     #$0a
+  111                             sta     debug_str
+  112                             ldx     debug_tmp
+  113                             lda     debug_tmp_2
+  114                             .endif
+  115                             .endm
+  116                     
+  117                     
+  118                     ; some ppu stuff
+  119           3F00      bgpal   .equ $3f00
+  120           2020      bgnam   .equ $2020
+  121                     
+  122                     ppua    .macro
+  123                             .if \?1 = ARG_IMMED
+  124                             mov #high(\1), $2006
+  125                             mov #low(\1), $2006
+  126                             .else
+  127                             mov \1+1, $2006
+  128                             mov \1, $2006
+  129                             .endif
+  130                             .endm
+  131                     
+  132                     ppuw    .macro
+  133                             mov \1, $2007
+  134                             .endm
+  135                     
+  136                     
+  137                     
+#[1]   escape.s
+#[2]   tiles.mac
+    5                             .include "tiles.mac"
+    1                     ;;; macro to set a tile  (tile, pos, off)
+    2                             .macro  set_tile
+    3                             mov     \3, tile_offset
+    4                             mov     \2, tile_pos
+    5                             mov16   \1, tile
+    6                             jsr     draw_tile
+    7                             .endm
+#[1]   escape.s
+    6                                     
+    7                     ;;; items
+    8                             .inesprg 2
+    9                             .ineschr 1
+   10                             .inesmir 3
+   11                             .inesmap 4
+   12                     
+   13                     
+   14           0000              .zp
+   15  --:0000            debug_str:      .ds 1
+   16  --:0001            debug_num:      .ds 1
+   17  --:0002            debug_tmp:      .ds 1
+   18  --:0003            debug_tmp_2:    .ds 1
+   19  --:0004            tile_pos: .ds   1
+   20  --:0005            tile:   .ds     2
+   21  --:0007            tiles:  .ds     180
+   22                     
+   23  --:00BB            level_num:      .ds     1
+   24                             
+   25  --:00BC            gx:     .ds     1
+   26  --:00BD            gy:     .ds     1
+   27  --:00BE            gd:     .ds     1
+   28                     
+   29  --:00BF            idx16:  .ds     2
+   30  --:00C1            tmp:    .ds     1
+   31  --:00C2            tmp_2:  .ds     1
+   32  --:00C3            tmp_3:  .ds     1
+   33  --:00C4            tmp_4:  .ds     1
+   34  --:00C5            tmp_5:  .ds     1
+   35  --:00C6            tmp16:  .ds     2
+   36  --:00C8            tmp16_2: .ds    2
+   37  --:00CA            tmp_size: .ds   2
+   38  --:00CC            tmp_addr: .ds   2
+   39                     
+   40  --:00CE            x_scroll: .ds   1
+   41                             
+   42  --:00CF            level_addr:     .ds     3
+   43                     
+   44                                     
+   45                                     
+   46           0200              .bss
+   47                     
+   48  --:0200            sprite: .ds     256
+   49  --:0300            otiles: .ds     180
+   50  --:03B4            dests:  .ds     180
+   51  --:0468            flags:  .ds     180
+   52  --:051C            title:  .ds     36
+   53  --:0540            author: .ds     20
+   54                                     
+   55                     
+   56                             
+   57                     ;;; initialize
+   58           E000              .code
+   59           0001              .bank   1
+   60           8000              .org    $8000
+   61                             
+   62                     
+   63                                     
+   64           0002              .bank   2
+   65           C000              .org    $C000
+   66                     
+   67  02:C000  78        intr:   sei
+   68  02:C001  40                rti
+   69                             
+   70  02:C002  78        start:  sei
+   71                             mov     #0, level_num
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C003  A9 00             lda #0
+       02:C005  8D BB 00          sta level_num
+                                  .endif
+   72                     
+   73  02:C008            start2:         
+   74  02:C008  A9 00             lda     #0
+   75  02:C00A  8D 00 20          sta     $2000
+   76  02:C00D  8D 01 20          sta     $2001
+   77                     
+   78  02:C010  20 65 C2          jsr     init_sprite_memory
+   79                             
+   80                             debug_p ds_begin
+                0000              .if     debug
+                                  .endif
+   81                             
+   82  02:C013  20 17 C2          jsr     vwait   
+   83  02:C016  20 17 C2          jsr     vwait
+   84  02:C019  20 17 C2          jsr     vwait   
+   85  02:C01C  20 17 C2          jsr     vwait
+   86                     
+   87                             
+   88                     
+   89                     ;;; draw item
+   90  02:C01F  20 17 C2          jsr     vwait
+   91                     
+   92  02:C022  A9 3F             lda     #$3f
+   93  02:C024  8D 06 20          sta     $2006
+   94  02:C027  A9 00             lda     #$00
+   95  02:C029  8D 06 20          sta     $2006
+   96  02:C02C  8D 05 20          sta     $2005
+   97  02:C02F  8D 05 20          sta     $2005
+   98                     
+   99                     ;;; palette 0
+  100  02:C032  A9 0E             lda     #$0e            ; black
+  101  02:C034  8D 07 20          sta     $2007
+  102  02:C037  A9 2D             lda     #$2d            ; 50gray
+  103  02:C039  8D 07 20          sta     $2007
+  104  02:C03C  A9 3D             lda     #$3d            ; 25gray
+  105  02:C03E  8D 07 20          sta     $2007
+  106  02:C041  A9 38             lda     #$38            ; orange
+  107  02:C043  8D 07 20          sta     $2007
+  108                     
+  109                     ;;; palette 1
+  110  02:C046  A9 0E             lda     #$0e
+  111  02:C048  8D 07 20          sta     $2007
+  112  02:C04B  A9 16             lda     #$16            ; red
+  113  02:C04D  8D 07 20          sta     $2007
+  114  02:C050  A9 3D             lda     #$3d            ; gray
+  115  02:C052  8D 07 20          sta     $2007
+  116  02:C055  A9 28             lda     #$28            ; yellow
+  117  02:C057  8D 07 20          sta     $2007
+  118                             
+  119                             
+  120                     ;;; palette 2
+  121  02:C05A  A9 0E             lda     #$0e            ; black
+  122  02:C05C  8D 07 20          sta     $2007
+  123  02:C05F  A9 12             lda     #$12            ; blue
+  124  02:C061  8D 07 20          sta     $2007
+  125  02:C064  A9 3D             lda     #$3D            ; gray
+  126  02:C066  8D 07 20          sta     $2007
+  127  02:C069  A9 17             lda     #$17            ; brownish
+  128  02:C06B  8D 07 20          sta     $2007
+  129                             
+  130                             
+  131                     ;;; palette 3
+  132  02:C06E  A9 0E             lda     #$0e            ; black
+  133  02:C070  8D 07 20          sta     $2007
+  134  02:C073  A9 19             lda     #$19            ; green
+  135  02:C075  8D 07 20          sta     $2007
+  136  02:C078  A9 3D             lda     #$3d            ; gray
+  137  02:C07A  8D 07 20          sta     $2007
+  138  02:C07D  A9 12             lda     #$12            ; blue
+  139  02:C07F  8D 07 20          sta     $2007
+  140                     
+  141                             
+  142                     ;;; sprite palette 1
+  143  02:C082  A9 3F             lda     #$3f
+  144  02:C084  8D 06 20          sta     $2006
+  145  02:C087  A9 11             lda     #$11
+  146  02:C089  8D 06 20          sta     $2006
+  147  02:C08C  A9 18             lda     #$18            ; brown
+  148  02:C08E  8D 07 20          sta     $2007
+  149  02:C091  A9 36             lda     #$36            ; pink
+  150  02:C093  8D 07 20          sta     $2007
+  151  02:C096  A9 2C             lda     #$2C            ; blue
+  152  02:C098  8D 07 20          sta     $2007
+  153                             
+  154                                     
+  155  02:C09B  20 17 C2          jsr     vwait
+  156  02:C09E  20 17 C2          jsr     vwait
+  157                     
+  158                     
+  159  02:C0A1  20 BD C0          jsr     choose_level
+  160                             
+  161  02:C0A4  20 17 C2          jsr     vwait
+  162                             
+  163  02:C0A7            ppu_on: 
+  164                             debug_p ds_ppu
+                0000              .if     debug
+                                  .endif
+  165  02:C0A7  20 17 C2          jsr     vwait
+  166  02:C0AA  A9 00             lda     #%00000000
+  167  02:C0AC  8D 00 20          sta     $2000
+  168  02:C0AF  A9 1A             lda     #%00011010
+  169  02:C0B1  8D 01 20          sta     $2001
+  170                     
+  171  02:C0B4            main_loop:
+  172  02:C0B4  20 AE C1          jsr     handle_joy
+  173  02:C0B7  20 17 C2          jsr     vwait
+  174  02:C0BA  4C B4 C0          jmp     main_loop
+  175                     
+  176                             
+  177  02:C0BD            choose_level:
+  178  02:C0BD  AD BB 00          lda     level_num
+  179  02:C0C0  D0 0D             bne     .l1
+  180                             mov16   #sample_level01, level_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#sample_level01), level_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C0C2  A9 F6             lda #low(#sample_level01)
+       02:C0C4  8D CF 00          sta level_addr
+                                  .endif
+                                  mov #high(#sample_level01), level_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C0C7  A9 C9             lda #high(#sample_level01)
+       02:C0C9  8D D0 00          sta level_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  181  02:C0CC  4C A1 C1          jmp     .go
+  182  02:C0CF  AD BB 00  .l1:    lda     level_num
+  183  02:C0D2  C9 01             cmp     #1
+  184  02:C0D4  D0 0D             bne     .l2
+  185                             mov16   #sample_level02, level_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#sample_level02), level_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C0D6  A9 9F             lda #low(#sample_level02)
+       02:C0D8  8D CF 00          sta level_addr
+                                  .endif
+                                  mov #high(#sample_level02), level_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C0DB  A9 CA             lda #high(#sample_level02)
+       02:C0DD  8D D0 00          sta level_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  186  02:C0E0  4C A1 C1          jmp     .go
+  187  02:C0E3  AD BB 00  .l2:    lda     level_num
+  188  02:C0E6  C9 02             cmp     #2
+  189  02:C0E8  D0 0D             bne     .l3
+  190                             mov16   #sample_level02, level_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#sample_level02), level_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C0EA  A9 9F             lda #low(#sample_level02)
+       02:C0EC  8D CF 00          sta level_addr
+                                  .endif
+                                  mov #high(#sample_level02), level_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C0EF  A9 CA             lda #high(#sample_level02)
+       02:C0F1  8D D0 00          sta level_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  191  02:C0F4  4C A1 C1          jmp     .go
+  192  02:C0F7  AD BB 00  .l3:    lda     level_num
+  193  02:C0FA  C9 03             cmp     #3
+  194  02:C0FC  D0 0D             bne     .l4
+  195                             mov16   #sample_level03, level_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#sample_level03), level_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C0FE  A9 40             lda #low(#sample_level03)
+       02:C100  8D CF 00          sta level_addr
+                                  .endif
+                                  mov #high(#sample_level03), level_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C103  A9 CB             lda #high(#sample_level03)
+       02:C105  8D D0 00          sta level_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  196  02:C108  4C A1 C1          jmp     .go
+  197  02:C10B  AD BB 00  .l4:    lda     level_num
+  198  02:C10E  C9 04             cmp     #4
+  199  02:C110  D0 0D             bne     .l5
+  200                             mov16   #sample_level04, level_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#sample_level04), level_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C112  A9 C9             lda #low(#sample_level04)
+       02:C114  8D CF 00          sta level_addr
+                                  .endif
+                                  mov #high(#sample_level04), level_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C117  A9 CB             lda #high(#sample_level04)
+       02:C119  8D D0 00          sta level_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  201  02:C11C  4C A1 C1          jmp     .go
+  202  02:C11F  AD BB 00  .l5:    lda     level_num
+  203  02:C122  C9 05             cmp     #5
+  204  02:C124  D0 0D             bne     .l6
+  205                             mov16   #sample_level05, level_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#sample_level05), level_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C126  A9 83             lda #low(#sample_level05)
+       02:C128  8D CF 00          sta level_addr
+                                  .endif
+                                  mov #high(#sample_level05), level_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C12B  A9 CC             lda #high(#sample_level05)
+       02:C12D  8D D0 00          sta level_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  206  02:C130  4C A1 C1          jmp     .go
+  207  02:C133  AD BB 00  .l6:    lda     level_num
+  208  02:C136  C9 06             cmp     #6
+  209  02:C138  D0 0D             bne     .l7
+  210                             mov16   #sample_level06, level_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#sample_level06), level_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C13A  A9 34             lda #low(#sample_level06)
+       02:C13C  8D CF 00          sta level_addr
+                                  .endif
+                                  mov #high(#sample_level06), level_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C13F  A9 CD             lda #high(#sample_level06)
+       02:C141  8D D0 00          sta level_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  211  02:C144  4C A1 C1          jmp     .go
+  212  02:C147  AD BB 00  .l7:    lda     level_num
+  213  02:C14A  C9 07             cmp     #7
+  214  02:C14C  D0 0D             bne     .l8
+  215                             mov16   #sample_level07, level_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#sample_level07), level_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C14E  A9 B7             lda #low(#sample_level07)
+       02:C150  8D CF 00          sta level_addr
+                                  .endif
+                                  mov #high(#sample_level07), level_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C153  A9 CD             lda #high(#sample_level07)
+       02:C155  8D D0 00          sta level_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  216  02:C158  4C A1 C1          jmp     .go
+  217  02:C15B  AD BB 00  .l8:    lda     level_num
+  218  02:C15E  C9 08             cmp     #8
+  219  02:C160  D0 0D             bne     .l9
+  220                             mov16   #sample_level08, level_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#sample_level08), level_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C162  A9 4F             lda #low(#sample_level08)
+       02:C164  8D CF 00          sta level_addr
+                                  .endif
+                                  mov #high(#sample_level08), level_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C167  A9 CE             lda #high(#sample_level08)
+       02:C169  8D D0 00          sta level_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  221  02:C16C  4C A1 C1          jmp     .go
+  222  02:C16F  AD BB 00  .l9:    lda     level_num
+  223  02:C172  C9 09             cmp     #9
+  224  02:C174  D0 0D             bne     .l10
+  225                             mov16   #sample_level09, level_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#sample_level09), level_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C176  A9 0F             lda #low(#sample_level09)
+       02:C178  8D CF 00          sta level_addr
+                                  .endif
+                                  mov #high(#sample_level09), level_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C17B  A9 CF             lda #high(#sample_level09)
+       02:C17D  8D D0 00          sta level_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  226  02:C180  4C A1 C1          jmp     .go
+  227  02:C183  AD BB 00  .l10:   lda     level_num
+  228  02:C186  C9 0A             cmp     #10
+  229  02:C188  D0 0D             bne     .l11
+  230                             mov16   #sample_level10, level_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#sample_level10), level_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C18A  A9 A9             lda #low(#sample_level10)
+       02:C18C  8D CF 00          sta level_addr
+                                  .endif
+                                  mov #high(#sample_level10), level_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C18F  A9 CF             lda #high(#sample_level10)
+       02:C191  8D D0 00          sta level_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  231  02:C194  4C A1 C1          jmp     .go
+  232                     .l11:   mov16   #sample_level11, level_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#sample_level11), level_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C197  A9 6D             lda #low(#sample_level11)
+       02:C199  8D CF 00          sta level_addr
+                                  .endif
+                                  mov #high(#sample_level11), level_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C19C  A9 D0             lda #high(#sample_level11)
+       02:C19E  8D D0 00          sta level_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  233                                     
+  234  02:C1A1            .go:    
+  235  02:C1A1  20 3C C5          jsr     load_level
+  236  02:C1A4  20 70 C2          jsr     draw_guy
+  237                     
+  238  02:C1A7  20 17 C2          jsr     vwait
+  239  02:C1AA  20 35 C2          jsr     draw_level
+  240                     
+  241  02:C1AD  60                rts
+  242                             
+  243                             
+  244  02:C1AE            handle_joy:
+  245                             ;; joystick
+  246  02:C1AE  A9 01             lda     #1
+  247  02:C1B0  8D 16 40          sta     $4016
+  248  02:C1B3  A9 00             lda     #0
+  249  02:C1B5  8D 16 40          sta     $4016
+  250                     
+  251  02:C1B8  AD 16 40          lda     $4016
+  252  02:C1BB  AD 16 40          lda     $4016
+  253  02:C1BE  AD 16 40          lda     $4016
+  254                             
+  255  02:C1C1  AD 16 40          lda     $4016
+  256  02:C1C4  29 01             and     #%00000001      ; start
+  257  02:C1C6  F0 12             beq     .j_up
+  258  02:C1C8  EE BB 00          inc     level_num
+  259  02:C1CB  AD BB 00          lda     level_num
+  260  02:C1CE  C9 0C             cmp     #12
+  261  02:C1D0  D0 05             bne     .continue
+  262  02:C1D2  A9 00             lda     #0
+  263  02:C1D4  8D BB 00          sta     level_num
+  264                             
+  265  02:C1D7            .continue
+  266  02:C1D7  4C 08 C0          jmp     start2
+  267                             
+  268  02:C1DA            .j_up:  
+  269  02:C1DA  AD 16 40          lda     $4016
+  270  02:C1DD  29 01             and     #%00000001
+  271  02:C1DF  F0 08             beq     .j_down         ; up
+  272                             mov     #dir_up, gd
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C1E1  A9 01             lda #dir_up
+       02:C1E3  8D BE 00          sta gd
+                                  .endif
+  273  02:C1E6  20 70 C2          jsr     draw_guy
+  274                     
+  275  02:C1E9            .j_down:
+  276  02:C1E9  AD 16 40          lda     $4016
+  277  02:C1EC  29 01             and     #%00000001
+  278  02:C1EE  F0 08             beq     .j_left         ; down
+  279                             mov     #dir_down, gd
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C1F0  A9 02             lda #dir_down
+       02:C1F2  8D BE 00          sta gd
+                                  .endif
+  280  02:C1F5  20 70 C2          jsr     draw_guy
+  281                     
+  282  02:C1F8            .j_left:
+  283  02:C1F8  AD 16 40          lda     $4016
+  284  02:C1FB  29 01             and     #%00000001
+  285  02:C1FD  F0 08             beq     .j_right
+  286                             mov     #dir_left, gd
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C1FF  A9 03             lda #dir_left
+       02:C201  8D BE 00          sta gd
+                                  .endif
+  287  02:C204  20 70 C2          jsr     draw_guy
+  288                     
+  289                                                     ; left
+  290  02:C207            .j_right:
+  291  02:C207  AD 16 40          lda     $4016
+  292  02:C20A  29 01             and     #%00000001
+  293  02:C20C  F0 08             beq     .done
+  294                             mov     #dir_right, gd
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C20E  A9 04             lda #dir_right
+       02:C210  8D BE 00          sta gd
+                                  .endif
+  295  02:C213  20 70 C2          jsr     draw_guy
+  296                                                     ; right
+  297  02:C216            .done:  
+  298  02:C216  60                rts
+  299                     
+  300                             
+  301  02:C217            vwait:  
+  302  02:C217  AD 02 20          lda     $2002
+  303  02:C21A  10 FB             bpl     vwait
+  304                     
+  305  02:C21C  A9 00             lda     #0
+  306  02:C21E  8D 06 20          sta     $2006
+  307  02:C221  8D 06 20          sta     $2006
+  308  02:C224  AD CE 00          lda     x_scroll
+  309  02:C227  8D 05 20          sta     $2005
+  310  02:C22A  A9 00             lda     #0
+  311  02:C22C  8D 05 20          sta     $2005
+  312                     
+  313  02:C22F  A9 02             lda     #sprite/$100    ; sprite
+  314  02:C231  8D 14 40          sta     $4014
+  315  02:C234  60                rts
+  316                     
+  317                     
+  318  02:C235            draw_level:
+  319                             ;; assumes load_level just called
+  320                             mov     #0, tile_pos
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C235  A9 00             lda #0
+       02:C237  8D 04 00          sta tile_pos
+                                  .endif
+  321  02:C23A  AD 04 00  .loop:  lda     tile_pos
+  322  02:C23D  C9 B4             cmp     #180
+  323  02:C23F  F0 23             beq     .done
+  324  02:C241  89 04             bit     #%00000100
+  325  02:C243  D0 03             bne     .continue
+  326  02:C245  20 17 C2          jsr     vwait
+  327  02:C248            .continue:      
+  328  02:C248  AE 04 00          ldx     tile_pos
+  329                     
+  330                             ;; get the tile
+  331  02:C24B  BD 07 00          lda     tiles, X
+  332  02:C24E  AA                tax
+  333  02:C24F  BD 10 C8          lda     tile_name_table, X
+  334  02:C252  8D 05 00          sta     tile
+  335  02:C255  BD 43 C8          lda     tile_attr_table, X
+  336  02:C258  8D 06 00          sta     tile+1  
+  337                     
+  338  02:C25B  20 03 C4          jsr     draw_tile
+  339  02:C25E  EE 04 00          inc     tile_pos
+  340  02:C261  4C 3A C2          jmp     .loop
+  341                                     
+  342  02:C264  60        .done:  rts
+  343                     
+  344                     
+  345  02:C265            init_sprite_memory:
+  346  02:C265  A2 FF             ldx     #$FF
+  347  02:C267  F0 06     .loop:  beq     .end    
+  348                             mov     #$FF, sprite, X
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C269  A9 FF             lda #$FF
+       02:C26B  9D 00 02          sta sprite,X
+                                  .endif
+  349  02:C26E  CA                dex
+  350  02:C26F  60        .end:   rts
+  351                     
+  352                     
+  353                             
+  354  02:C270            draw_guy:
+  355                             debug_p ds_draw_guy
+                0000              .if     debug
+                                  .endif
+  356  02:C270  AD BC 00          lda     gx
+  357  02:C273  0A                asl     a
+  358  02:C274  0A                asl     a
+  359  02:C275  0A                asl     a
+  360  02:C276  0A                asl     a
+  361  02:C277  38                sec
+  362  02:C278  ED CE 00          sbc     x_scroll
+  363  02:C27B  AA                tax
+  364                             
+  365  02:C27C  AD BD 00          lda     gy
+  366  02:C27F  0A                asl     a
+  367  02:C280  0A                asl     a
+  368  02:C281  0A                asl     a
+  369  02:C282  0A                asl     a
+  370  02:C283  18                clc
+  371  02:C284  69 2F             adc     #$2F
+  372  02:C286  A8                tay     
+  373                     
+  374  02:C287  AD BE 00          lda     gd
+  375  02:C28A  8D 01 00          sta     debug_num
+  376  02:C28D  C9 01             cmp     #dir_up
+  377  02:C28F  F0 15             beq     .up
+  378                     
+  379  02:C291            .compare2:      
+  380  02:C291  C9 02             cmp     #dir_down
+  381  02:C293  F0 0B             beq     .down_trampoline
+  382  02:C295  C9 04             cmp     #dir_right
+  383  02:C297  F0 0A             beq     .right_trampoline
+  384  02:C299  C9 03             cmp     #dir_left
+  385  02:C29B  F0 00             beq     .left_trampoline
+  386                     
+  387  02:C29D            .left_trampoline:
+  388  02:C29D  4C 54 C3          jmp     .left   
+  389  02:C2A0            .down_trampoline:
+  390  02:C2A0  4C FD C2          jmp     .down
+  391  02:C2A3            .right_trampoline:
+  392  02:C2A3  4C AB C3          jmp     .right
+  393                     
+  394  02:C2A6            .up:
+  395  02:C2A6  8C 00 02          sty     sprite
+  396  02:C2A9  AD 02 C8          lda     guy_u_tile
+  397  02:C2AC  8D 01 02          sta     sprite+1
+  398  02:C2AF  A9 00             lda     #0
+  399  02:C2B1  8D 02 02          sta     sprite+2
+  400  02:C2B4  8E 03 02          stx     sprite+3
+  401                     
+  402  02:C2B7  8C 04 02          sty     sprite+4
+  403  02:C2BA  AD 03 C8          lda     guy_u_tile+1
+  404  02:C2BD  8D 05 02          sta     sprite+5
+  405  02:C2C0  A9 00             lda     #0
+  406  02:C2C2  8D 06 02          sta     sprite+6
+  407  02:C2C5  8A                txa
+  408  02:C2C6  18                clc
+  409  02:C2C7  69 08             adc     #$8
+  410  02:C2C9  8D 07 02          sta     sprite+7
+  411                     
+  412  02:C2CC  98                tya
+  413  02:C2CD  18                clc
+  414  02:C2CE  69 08             adc     #$8
+  415  02:C2D0  8D 08 02          sta     sprite+8
+  416  02:C2D3  AD 04 C8          lda     guy_u_tile+2
+  417  02:C2D6  8D 09 02          sta     sprite+9
+  418  02:C2D9  A9 00             lda     #0
+  419  02:C2DB  8D 0A 02          sta     sprite+10
+  420  02:C2DE  8E 0B 02          stx     sprite+11
+  421                     
+  422  02:C2E1  98                tya
+  423  02:C2E2  18                clc
+  424  02:C2E3  69 08             adc     #$8
+  425  02:C2E5  8D 0C 02          sta     sprite+12
+  426  02:C2E8  AD 05 C8          lda     guy_u_tile+3
+  427  02:C2EB  8D 0D 02          sta     sprite+13
+  428  02:C2EE  A9 00             lda     #0
+  429  02:C2F0  8D 0E 02          sta     sprite+14
+  430  02:C2F3  8A                txa
+  431  02:C2F4  18                clc
+  432  02:C2F5  69 08             adc     #$8
+  433  02:C2F7  8D 0F 02          sta     sprite+15
+  434                     
+  435  02:C2FA  4C 02 C4          jmp     .done
+  436  02:C2FD            .down:  
+  437  02:C2FD  8C 00 02          sty     sprite
+  438  02:C300  AD 06 C8          lda     guy_d_tile
+  439  02:C303  8D 01 02          sta     sprite+1
+  440  02:C306  A9 00             lda     #0
+  441  02:C308  8D 02 02          sta     sprite+2
+  442  02:C30B  8E 03 02          stx     sprite+3
+  443                     
+  444  02:C30E  8C 04 02          sty     sprite+4
+  445  02:C311  AD 07 C8          lda     guy_d_tile+1
+  446  02:C314  8D 05 02          sta     sprite+5
+  447  02:C317  A9 00             lda     #0
+  448  02:C319  8D 06 02          sta     sprite+6
+  449  02:C31C  8A                txa
+  450  02:C31D  18                clc
+  451  02:C31E  69 08             adc     #$8
+  452  02:C320  8D 07 02          sta     sprite+7
+  453                     
+  454  02:C323  98                tya
+  455  02:C324  18                clc
+  456  02:C325  69 08             adc     #$8
+  457  02:C327  8D 08 02          sta     sprite+8
+  458  02:C32A  AD 08 C8          lda     guy_d_tile+2
+  459  02:C32D  8D 09 02          sta     sprite+9
+  460  02:C330  A9 00             lda     #0
+  461  02:C332  8D 0A 02          sta     sprite+10
+  462  02:C335  8E 0B 02          stx     sprite+11
+  463                     
+  464  02:C338  98                tya
+  465  02:C339  18                clc
+  466  02:C33A  69 08             adc     #$8
+  467  02:C33C  8D 0C 02          sta     sprite+12
+  468  02:C33F  AD 09 C8          lda     guy_d_tile+3
+  469  02:C342  8D 0D 02          sta     sprite+13
+  470  02:C345  A9 00             lda     #0
+  471  02:C347  8D 0E 02          sta     sprite+14
+  472  02:C34A  8A                txa
+  473  02:C34B  18                clc
+  474  02:C34C  69 08             adc     #$8
+  475  02:C34E  8D 0F 02          sta     sprite+15
+  476                     
+  477  02:C351  4C 02 C4          jmp     .done
+  478                     
+  479  02:C354            .left:  
+  480  02:C354  8C 00 02          sty     sprite
+  481  02:C357  AD 0A C8          lda     guy_l_tile
+  482  02:C35A  8D 01 02          sta     sprite+1
+  483  02:C35D  A9 00             lda     #0
+  484  02:C35F  8D 02 02          sta     sprite+2
+  485  02:C362  8E 03 02          stx     sprite+3
+  486                     
+  487  02:C365  8C 04 02          sty     sprite+4
+  488  02:C368  AD 0B C8          lda     guy_l_tile+1
+  489  02:C36B  8D 05 02          sta     sprite+5
+  490  02:C36E  A9 00             lda     #0
+  491  02:C370  8D 06 02          sta     sprite+6
+  492  02:C373  8A                txa
+  493  02:C374  18                clc
+  494  02:C375  69 08             adc     #$8
+  495  02:C377  8D 07 02          sta     sprite+7
+  496                     
+  497  02:C37A  98                tya
+  498  02:C37B  18                clc
+  499  02:C37C  69 08             adc     #$8
+  500  02:C37E  8D 08 02          sta     sprite+8
+  501  02:C381  AD 0C C8          lda     guy_l_tile+2
+  502  02:C384  8D 09 02          sta     sprite+9
+  503  02:C387  A9 00             lda     #0
+  504  02:C389  8D 0A 02          sta     sprite+10
+  505  02:C38C  8E 0B 02          stx     sprite+11
+  506                     
+  507  02:C38F  98                tya
+  508  02:C390  18                clc
+  509  02:C391  69 08             adc     #$8
+  510  02:C393  8D 0C 02          sta     sprite+12
+  511  02:C396  AD 0D C8          lda     guy_l_tile+3
+  512  02:C399  8D 0D 02          sta     sprite+13
+  513  02:C39C  A9 00             lda     #0
+  514  02:C39E  8D 0E 02          sta     sprite+14
+  515  02:C3A1  8A                txa
+  516  02:C3A2  18                clc
+  517  02:C3A3  69 08             adc     #$8
+  518  02:C3A5  8D 0F 02          sta     sprite+15
+  519                     
+  520  02:C3A8  4C 02 C4          jmp     .done
+  521                             
+  522  02:C3AB            .right:
+  523  02:C3AB  8C 00 02          sty     sprite
+  524  02:C3AE  AD 0B C8          lda     guy_l_tile+1
+  525  02:C3B1  8D 01 02          sta     sprite+1
+  526  02:C3B4  A9 40             lda     #%01000000
+  527  02:C3B6  8D 02 02          sta     sprite+2
+  528  02:C3B9  8E 03 02          stx     sprite+3
+  529                     
+  530  02:C3BC  8C 04 02          sty     sprite+4
+  531  02:C3BF  AD 0A C8          lda     guy_l_tile
+  532  02:C3C2  8D 05 02          sta     sprite+5
+  533  02:C3C5  A9 40             lda     #%01000000
+  534  02:C3C7  8D 06 02          sta     sprite+6
+  535  02:C3CA  8A                txa
+  536  02:C3CB  18                clc
+  537  02:C3CC  69 08             adc     #$8
+  538  02:C3CE  8D 07 02          sta     sprite+7
+  539                     
+  540  02:C3D1  98                tya
+  541  02:C3D2  18                clc
+  542  02:C3D3  69 08             adc     #$8
+  543  02:C3D5  8D 08 02          sta     sprite+8
+  544  02:C3D8  AD 0D C8          lda     guy_l_tile+3
+  545  02:C3DB  8D 09 02          sta     sprite+9
+  546  02:C3DE  A9 40             lda     #%01000000
+  547  02:C3E0  8D 0A 02          sta     sprite+10
+  548  02:C3E3  8E 0B 02          stx     sprite+11
+  549                     
+  550  02:C3E6  98                tya
+  551  02:C3E7  18                clc
+  552  02:C3E8  69 08             adc     #$8
+  553  02:C3EA  8D 0C 02          sta     sprite+12
+  554  02:C3ED  AD 0C C8          lda     guy_l_tile+2
+  555  02:C3F0  8D 0D 02          sta     sprite+13
+  556  02:C3F3  A9 40             lda     #%01000000
+  557  02:C3F5  8D 0E 02          sta     sprite+14
+  558  02:C3F8  8A                txa
+  559  02:C3F9  18                clc
+  560  02:C3FA  69 08             adc     #$8
+  561  02:C3FC  8D 0F 02          sta     sprite+15
+  562                     
+  563  02:C3FF  4C 02 C4          jmp     .done
+  564                     
+  565  02:C402            .done:  
+  566  02:C402  60                rts
+  567                     
+  568                             
+  569  02:C403            draw_tile:
+  570           00C6      screen_pos .equ tmp16
+  571  02:C403  AE 04 00          ldx     tile_pos
+  572                             mov     tile_pos_table_2, X, screen_pos+1
+                0000              .if 3 = ARG_REG
+                                  .else
+       02:C406  BD 2A C9          lda tile_pos_table_2,X
+       02:C409  8D C7 00          sta screen_pos+1
+                                  .endif
+  573                             mov     tile_pos_table_1, X, screen_pos
+                0000              .if 3 = ARG_REG
+                                  .else
+       02:C40C  BD 76 C8          lda tile_pos_table_1,X
+       02:C40F  8D C6 00          sta screen_pos
+                                  .endif
+  574                     
+  575                             add16   screen_pos, #$20C0
+       02:C412  18                clc
+                0001              .if 2 = ARG_IMMED
+       02:C413  AD C6 00          lda screen_pos
+       02:C416  69 C0             adc #low(#$20C0)
+       02:C418  8D C6 00          sta screen_pos
+       02:C41B  AD C7 00          lda screen_pos+1
+       02:C41E  69 20             adc #high(#$20C0)
+       02:C420  8D C7 00          sta screen_pos+1
+                                  .else
+                                  .endif
+  576                     
+  577  02:C423  AD C6 00          lda     screen_pos
+  578  02:C426  0A                asl     a
+  579  02:C427  AD C7 00          lda     screen_pos+1
+  580  02:C42A  2A                rol     a
+  581  02:C42B  29 07             and     #%00000111
+  582  02:C42D  0A                asl     a
+  583  02:C42E  0A                asl     a
+  584  02:C42F  0A                asl     a
+  585  02:C430  8D C9 00          sta     tmp16_2+1
+  586  02:C433  AD C6 00          lda     screen_pos
+  587  02:C436  29 1C             and     #%00011100
+  588  02:C438  4A                lsr     a
+  589  02:C439  4A                lsr     a
+  590  02:C43A  0D C9 00          ora     tmp16_2+1
+  591  02:C43D  69 C0             adc     #$C0    
+  592                     
+  593  02:C43F  8D C1 00          sta     tmp
+  594  02:C442  AD C7 00          lda     screen_pos+1
+  595  02:C445  29 FC             and     #%11111100
+  596  02:C447  18                clc
+  597  02:C448  69 03             adc     #$3     
+  598  02:C44A  8D 06 20          sta     $2006           ; set address of thing
+  599  02:C44D  A8                tay
+  600  02:C44E  AD C1 00          lda     tmp
+  601  02:C451  8D 06 20          sta     $2006   
+  602  02:C454  AE 07 20          ldx     $2007           ; invalid data
+  603  02:C457  AE 07 20          ldx     $2007           ; correct data
+  604  02:C45A  8C 06 20          sty     $2006           ; reset address
+  605  02:C45D  8D 06 20          sta     $2006
+  606                     
+  607  02:C460  AD C6 00          lda     screen_pos      ; find the bit
+  608  02:C463  29 42             and     #%01000010
+  609  02:C465  D0 12             bne     .test1
+  610  02:C467  AD 06 00          lda     tile+1
+  611  02:C46A  29 03             and     #%00000011
+  612  02:C46C  8D C1 00          sta     tmp
+  613  02:C46F  8A                txa
+  614  02:C470  0D C1 00          ora     tmp
+  615  02:C473  8D 07 20          sta     $2007           ; set the color
+  616  02:C476  4C B4 C4          jmp     .update_tile
+  617                     
+  618  02:C479  C9 02     .test1: cmp     #%00000010
+  619  02:C47B  D0 12             bne     .test2
+  620  02:C47D  AD 06 00          lda     tile+1
+  621  02:C480  29 0C             and     #%00001100
+  622  02:C482  8D C1 00          sta     tmp
+  623  02:C485  8A                txa
+  624  02:C486  0D C1 00          ora     tmp
+  625  02:C489  8D 07 20          sta     $2007
+  626  02:C48C  4C B4 C4          jmp     .update_tile
+  627                     
+  628  02:C48F  C9 40     .test2: cmp     #%01000000
+  629  02:C491  D0 12             bne     .test3
+  630  02:C493  AD 06 00          lda     tile+1
+  631  02:C496  29 30             and     #%00110000
+  632  02:C498  8D C1 00          sta     tmp
+  633  02:C49B  8A                txa
+  634  02:C49C  0D C1 00          ora     tmp
+  635  02:C49F  8D 07 20          sta     $2007
+  636  02:C4A2  4C B4 C4          jmp     .update_tile
+  637                     
+  638  02:C4A5  AD 06 00  .test3: lda     tile+1
+  639  02:C4A8  29 C0             and     #%11000000
+  640  02:C4AA  8D C1 00          sta     tmp
+  641  02:C4AD  8A                txa
+  642  02:C4AE  0D C1 00          ora     tmp
+  643  02:C4B1  8D 07 20          sta     $2007
+  644                             
+  645                     
+  646  02:C4B4            .update_tile:                                           
+  647  02:C4B4  AD C7 00          lda     tmp16+1
+  648  02:C4B7  8D 06 20          sta     $2006
+  649  02:C4BA  AD C6 00          lda     tmp16
+  650  02:C4BD  8D 06 20          sta     $2006
+  651  02:C4C0  AD 05 00          lda     tile
+  652  02:C4C3  8D 07 20          sta     $2007           ; update the tile
+  653                     
+  654                             add16   tmp16, #1       ; next part (right)
+       02:C4C6  18                clc
+                0001              .if 2 = ARG_IMMED
+       02:C4C7  AD C6 00          lda tmp16
+       02:C4CA  69 01             adc #low(#1)
+       02:C4CC  8D C6 00          sta tmp16
+       02:C4CF  AD C7 00          lda tmp16+1
+       02:C4D2  69 00             adc #high(#1)
+       02:C4D4  8D C7 00          sta tmp16+1
+                                  .else
+                                  .endif
+  655  02:C4D7  AD C7 00          lda     tmp16+1
+  656  02:C4DA  8D 06 20          sta     $2006
+  657  02:C4DD  AD C6 00          lda     tmp16
+  658  02:C4E0  8D 06 20          sta     $2006
+  659  02:C4E3  EE 05 00          inc     tile
+  660  02:C4E6  AD 05 00          lda     tile
+  661  02:C4E9  8D 07 20          sta     $2007           ; update the tile
+  662                     
+  663                             add16   tmp16, #$20     ; next part (down)
+       02:C4EC  18                clc
+                0001              .if 2 = ARG_IMMED
+       02:C4ED  AD C6 00          lda tmp16
+       02:C4F0  69 20             adc #low(#$20)
+       02:C4F2  8D C6 00          sta tmp16
+       02:C4F5  AD C7 00          lda tmp16+1
+       02:C4F8  69 00             adc #high(#$20)
+       02:C4FA  8D C7 00          sta tmp16+1
+                                  .else
+                                  .endif
+  664  02:C4FD  AD C7 00          lda     tmp16+1
+  665  02:C500  8D 06 20          sta     $2006
+  666  02:C503  AD C6 00          lda     tmp16
+  667  02:C506  8D 06 20          sta     $2006
+  668  02:C509  AD 05 00          lda     tile
+  669  02:C50C  18                clc
+  670  02:C50D  69 10             adc     #$10
+  671  02:C50F  8D 05 00          sta     tile
+  672  02:C512  8D 07 20          sta     $2007           ; update the tile
+  673                     
+  674                             add16   tmp16, #$FFFF   ; last part (left)
+       02:C515  18                clc
+                0001              .if 2 = ARG_IMMED
+       02:C516  AD C6 00          lda tmp16
+       02:C519  69 FF             adc #low(#$FFFF)
+       02:C51B  8D C6 00          sta tmp16
+       02:C51E  AD C7 00          lda tmp16+1
+       02:C521  69 FF             adc #high(#$FFFF)
+       02:C523  8D C7 00          sta tmp16+1
+                                  .else
+                                  .endif
+  675  02:C526  AD C7 00          lda     tmp16+1
+  676  02:C529  8D 06 20          sta     $2006
+  677  02:C52C  AD C6 00          lda     tmp16
+  678  02:C52F  8D 06 20          sta     $2006
+  679  02:C532  CE 05 00          dec     tile
+  680  02:C535  AD 05 00          lda     tile
+  681  02:C538  8D 07 20          sta     $2007           ; update the tile
+  682                     
+  683  02:C53B  60                rts
+  684                     
+  685                     
+  686                     
+  687  02:C53C            load_level:
+  688                             mov     #0, tmp_size+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C53C  A9 00             lda #0
+       02:C53E  8D CB 00          sta tmp_size+1
+                                  .endif
+  689                             mov     #dir_right, gd
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C541  A9 04             lda #dir_right
+       02:C543  8D BE 00          sta gd
+                                  .endif
+  690                             mov     #0, x_scroll
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C546  A9 00             lda #0
+       02:C548  8D CE 00          sta x_scroll
+                                  .endif
+  691                                             
+  692                             mov16   level_addr, idx16
+                0000              .if 6 = ARG_IMMED
+                                  .else
+                                  mov level_addr, idx16
+                0000              .if 6 = ARG_REG
+                                  .else
+       02:C54B  AD CF 00          lda level_addr
+       02:C54E  8D BF 00          sta idx16
+                                  .endif
+                                  mov level_addr+1, idx16+1
+                0000              .if 3 = ARG_REG
+                                  .else
+       02:C551  AD D0 00          lda level_addr+1
+       02:C554  8D C0 00          sta idx16+1
+                                  .endif
+                                  .endif
+  693  02:C557  A0 00             ldy     #0
+  694                             mov     [idx16], Y, tmp
+                0000              .if 4 = ARG_REG
+                                  .else
+       02:C559  B1 BF             lda [idx16],Y
+       02:C55B  8D C1 00          sta tmp
+                                  .endif
+  695  02:C55E  C8                iny
+  696                             mov     [idx16], Y, tmp
+                0000              .if 4 = ARG_REG
+                                  .else
+       02:C55F  B1 BF             lda [idx16],Y
+       02:C561  8D C1 00          sta tmp
+                                  .endif
+  697  02:C564  C8                iny
+  698                             mov     [idx16], Y, tmp
+                0000              .if 4 = ARG_REG
+                                  .else
+       02:C565  B1 BF             lda [idx16],Y
+       02:C567  8D C1 00          sta tmp
+                                  .endif
+  699  02:C56A  C8                iny
+  700                             mov     [idx16], Y, tmp
+                0000              .if 4 = ARG_REG
+                                  .else
+       02:C56B  B1 BF             lda [idx16],Y
+       02:C56D  8D C1 00          sta tmp
+                                  .endif
+  701  02:C570  A0 0F             ldy     #15             ; ESXL + width + height + MSB of size of title
+  702                             mov     [idx16], Y, tmp_size    ; size of title string
+                0000              .if 4 = ARG_REG
+                                  .else
+       02:C572  B1 BF             lda [idx16],Y
+       02:C574  8D CA 00          sta tmp_size
+                                  .endif
+  703                             add16   idx16, #16              ; move to start of title
+       02:C577  18                clc
+                0001              .if 2 = ARG_IMMED
+       02:C578  AD BF 00          lda idx16
+       02:C57B  69 10             adc #low(#16)
+       02:C57D  8D BF 00          sta idx16
+       02:C580  AD C0 00          lda idx16+1
+       02:C583  69 00             adc #high(#16)
+       02:C585  8D C0 00          sta idx16+1
+                                  .else
+                                  .endif
+  704                     
+  705                             ;; copy the title string
+  706                             strcpyp2c       idx16, title, tmp_size
+       02:C588  A0 00             ldy     #0
+       02:C58A  AE CA 00          ldx     tmp_size
+       02:C58D  F0 09             beq     .endloop00065
+       02:C58F            .loop00065:
+                                  mov     [idx16], Y, title, Y
+                0000              .if 4 = ARG_REG
+                                  .else
+       02:C58F  B1 BF             lda [idx16],Y
+       02:C591  99 1C 05          sta title,Y
+                                  .endif
+       02:C594  C8                iny
+       02:C595  CA                dex
+       02:C596  D0 F7             bne     .loop00065
+       02:C598            .endloop00065:
+                                  mov     #0, title, Y
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C598  A9 00             lda #0
+       02:C59A  99 1C 05          sta title,Y
+                                  .endif
+  707                     
+  708                             add16   idx16, tmp_size ; move past the title string
+       02:C59D  18                clc
+                0000              .if 6 = ARG_IMMED
+                                  .else
+       02:C59E  AD BF 00          lda idx16
+       02:C5A1  6D CA 00          adc tmp_size
+       02:C5A4  8D BF 00          sta idx16
+       02:C5A7  AD C0 00          lda idx16+1
+       02:C5AA  6D CB 00          adc tmp_size+1
+       02:C5AD  8D C0 00          sta idx16+1
+                                  .endif
+  709  02:C5B0  A0 03             ldy     #3              ; MSB of size of author
+  710                             mov     [idx16], Y, tmp_size ; size of author string
+                0000              .if 4 = ARG_REG
+                                  .else
+       02:C5B2  B1 BF             lda [idx16],Y
+       02:C5B4  8D CA 00          sta tmp_size
+                                  .endif
+  711                             add16   idx16, #4       ; move to start of author
+       02:C5B7  18                clc
+                0001              .if 2 = ARG_IMMED
+       02:C5B8  AD BF 00          lda idx16
+       02:C5BB  69 04             adc #low(#4)
+       02:C5BD  8D BF 00          sta idx16
+       02:C5C0  AD C0 00          lda idx16+1
+       02:C5C3  69 00             adc #high(#4)
+       02:C5C5  8D C0 00          sta idx16+1
+                                  .else
+                                  .endif
+  712                     
+  713                             ;; copy the author string
+  714                             strcpyp2c       idx16, author, tmp_size
+       02:C5C8  A0 00             ldy     #0
+       02:C5CA  AE CA 00          ldx     tmp_size
+       02:C5CD  F0 09             beq     .endloop00071
+       02:C5CF            .loop00071:
+                                  mov     [idx16], Y, author, Y
+                0000              .if 4 = ARG_REG
+                                  .else
+       02:C5CF  B1 BF             lda [idx16],Y
+       02:C5D1  99 40 05          sta author,Y
+                                  .endif
+       02:C5D4  C8                iny
+       02:C5D5  CA                dex
+       02:C5D6  D0 F7             bne     .loop00071
+       02:C5D8            .endloop00071:
+                                  mov     #0, author, Y
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C5D8  A9 00             lda #0
+       02:C5DA  99 40 05          sta author,Y
+                                  .endif
+  715                     
+  716                             add16   idx16, tmp_size ; move past the author string
+       02:C5DD  18                clc
+                0000              .if 6 = ARG_IMMED
+                                  .else
+       02:C5DE  AD BF 00          lda idx16
+       02:C5E1  6D CA 00          adc tmp_size
+       02:C5E4  8D BF 00          sta idx16
+       02:C5E7  AD C0 00          lda idx16+1
+       02:C5EA  6D CB 00          adc tmp_size+1
+       02:C5ED  8D C0 00          sta idx16+1
+                                  .endif
+  717                     
+  718  02:C5F0  A0 03             ldy     #3              ; MSB of guy x
+  719                             mov     [idx16], Y, gx
+                0000              .if 4 = ARG_REG
+                                  .else
+       02:C5F2  B1 BF             lda [idx16],Y
+       02:C5F4  8D BC 00          sta gx
+                                  .endif
+  720                             add16   idx16, #4
+       02:C5F7  18                clc
+                0001              .if 2 = ARG_IMMED
+       02:C5F8  AD BF 00          lda idx16
+       02:C5FB  69 04             adc #low(#4)
+       02:C5FD  8D BF 00          sta idx16
+       02:C600  AD C0 00          lda idx16+1
+       02:C603  69 00             adc #high(#4)
+       02:C605  8D C0 00          sta idx16+1
+                                  .else
+                                  .endif
+  721  02:C608  A0 03             ldy     #3              ; MSB of guy y
+  722                             mov     [idx16], Y, gy
+                0000              .if 4 = ARG_REG
+                                  .else
+       02:C60A  B1 BF             lda [idx16],Y
+       02:C60C  8D BD 00          sta gy
+                                  .endif
+  723                             add16   idx16, #4
+       02:C60F  18                clc
+                0001              .if 2 = ARG_IMMED
+       02:C610  AD BF 00          lda idx16
+       02:C613  69 04             adc #low(#4)
+       02:C615  8D BF 00          sta idx16
+       02:C618  AD C0 00          lda idx16+1
+       02:C61B  69 00             adc #high(#4)
+       02:C61D  8D C0 00          sta idx16+1
+                                  .else
+                                  .endif
+  724                     
+  725                                     
+  726                             ;; start rledecoding
+  727                             mov16   #tiles, tmp_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#tiles), tmp_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C620  A9 07             lda #low(#tiles)
+       02:C622  8D CC 00          sta tmp_addr
+                                  .endif
+                                  mov #high(#tiles), tmp_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C625  A9 00             lda #high(#tiles)
+       02:C627  8D CD 00          sta tmp_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  728  02:C62A  20 6E C6          jsr     rledecode
+  729                     
+  730                     
+  731                             debug_p ds_tiles
+                0000              .if     debug
+                                  .endif
+  732                             mov     #tiles, debug_num
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C62D  A9 07             lda #tiles
+       02:C62F  8D 01 00          sta debug_num
+                                  .endif
+  733                             mov     (#tiles)+1, debug_num
+                0000              .if 3 = ARG_REG
+                                  .else
+       02:C632  AD 08 00          lda (#tiles)+1
+       02:C635  8D 01 00          sta debug_num
+                                  .endif
+  734  02:C638  A2 00             ldx     #0
+  735  02:C63A            .tile_print:    
+  736                             mov     tiles, X, debug_num
+                0000              .if 3 = ARG_REG
+                                  .else
+       02:C63A  BD 07 00          lda tiles,X
+       02:C63D  8D 01 00          sta debug_num
+                                  .endif
+  737  02:C640  E8                inx
+  738  02:C641  8A                txa
+  739  02:C642  C9 B4             cmp     #180
+  740  02:C644  D0 F4             bne     .tile_print
+  741                             
+  742                             mov16   #otiles, tmp_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#otiles), tmp_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C646  A9 00             lda #low(#otiles)
+       02:C648  8D CC 00          sta tmp_addr
+                                  .endif
+                                  mov #high(#otiles), tmp_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C64B  A9 03             lda #high(#otiles)
+       02:C64D  8D CD 00          sta tmp_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  743  02:C650  20 6E C6          jsr     rledecode
+  744                             mov16   #dests, tmp_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#dests), tmp_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C653  A9 B4             lda #low(#dests)
+       02:C655  8D CC 00          sta tmp_addr
+                                  .endif
+                                  mov #high(#dests), tmp_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C658  A9 03             lda #high(#dests)
+       02:C65A  8D CD 00          sta tmp_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  745  02:C65D  20 6E C6          jsr     rledecode
+  746                             mov16   #flags, tmp_addr
+                0001              .if 2 = ARG_IMMED
+                                  mov #low(#flags), tmp_addr
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C660  A9 68             lda #low(#flags)
+       02:C662  8D CC 00          sta tmp_addr
+                                  .endif
+                                  mov #high(#flags), tmp_addr+1
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C665  A9 04             lda #high(#flags)
+       02:C667  8D CD 00          sta tmp_addr+1
+                                  .endif
+                                  .else
+                                  .endif
+  747  02:C66A  20 6E C6          jsr     rledecode
+  748                     
+  749  02:C66D  60                rts
+  750                                     
+  751                             
+  752                     
+  753  02:C66E            rledecode:
+  754           00C1      run     .equ tmp
+  755           00C2      size    .equ tmp_2
+  756           00C3      bytes   .equ tmp_3
+  757           00C4      char    .equ tmp_4
+  758                     
+  759                             debug_p ds1
+                0000              .if     debug
+                                  .endif
+  760                             debug_p ds_tmpaddr
+                0000              .if     debug
+                                  .endif
+  761  02:C66E  AD CC 00          lda     tmp_addr
+  762  02:C671  8D 01 00          sta     debug_num
+  763  02:C674  AD CD 00          lda     tmp_addr+1
+  764  02:C677  8D 01 00          sta     debug_num
+  765                             ;; take idx16, read from it and advance it, and store
+  766                             ;; result in place pointed by tmp_addr
+  767                             mov     #180, size      ; size of map
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C67A  A9 B4             lda #180
+       02:C67C  8D C2 00          sta size
+                                  .endif
+  768  02:C67F  A2 00             ldx     #0
+  769  02:C681  A0 00             ldy     #0
+  770                             mov     [idx16], Y, bytes
+                0000              .if 4 = ARG_REG
+                                  .else
+       02:C683  B1 BF             lda [idx16],Y
+       02:C685  8D C3 00          sta bytes
+                                  .endif
+  771                     
+  772                             inc16   idx16
+                                  add16 idx16, #1
+       02:C688  18                clc
+                0001              .if 2 = ARG_IMMED
+       02:C689  AD BF 00          lda idx16
+       02:C68C  69 01             adc #low(#1)
+       02:C68E  8D BF 00          sta idx16
+       02:C691  AD C0 00          lda idx16+1
+       02:C694  69 00             adc #high(#1)
+       02:C696  8D C0 00          sta idx16+1
+                                  .else
+                                  .endif
+  773                     
+  774  02:C699            .loop:  
+  775                             ;; read a byte to determine run
+  776                             mov     [idx16], Y, run
+                0000              .if 4 = ARG_REG
+                                  .else
+       02:C699  B1 BF             lda [idx16],Y
+       02:C69B  8D C1 00          sta run
+                                  .endif
+  777                             inc16   idx16
+                                  add16 idx16, #1
+       02:C69E  18                clc
+                0001              .if 2 = ARG_IMMED
+       02:C69F  AD BF 00          lda idx16
+       02:C6A2  69 01             adc #low(#1)
+       02:C6A4  8D BF 00          sta idx16
+       02:C6A7  AD C0 00          lda idx16+1
+       02:C6AA  69 00             adc #high(#1)
+       02:C6AC  8D C0 00          sta idx16+1
+                                  .else
+                                  .endif
+  778  02:C6AF  AD C1 00          lda     run
+  779  02:C6B2  D0 03             bne     .run
+  780  02:C6B4  4C F7 C6          jmp     .anti_run       ; if 0, anti-run
+  781  02:C6B7            .run:   
+  782                             ;; run
+  783                             debug_p ds_run
+                0000              .if     debug
+                                  .endif
+  784                             mov     #0, char        ; set char to 0
+                0000              .if 2 = ARG_REG
+                                  .else
+       02:C6B7  A9 00             lda #0
+       02:C6B9  8D C4 00          sta char
+                                  .endif
+  785  02:C6BC  AD C3 00          lda     bytes           ; check if bytes == 0
+  786  02:C6BF  F0 16             beq     .in_run_loop    ; skip and write zeros if bytes == 0
+  787                     
+  788                             mov     [idx16], Y, char ; read a char, since bytes != 0
+                0000              .if 4 = ARG_REG
+                                  .else
+       02:C6C1  B1 BF             lda [idx16],Y
+       02:C6C3  8D C4 00          sta char
+                                  .endif
+  789                             inc16   idx16
+                                  add16 idx16, #1
+       02:C6C6  18                clc
+                0001              .if 2 = ARG_IMMED
+       02:C6C7  AD BF 00          lda idx16
+       02:C6CA  69 01             adc #low(#1)
+       02:C6CC  8D BF 00          sta idx16
+       02:C6CF  AD C0 00          lda idx16+1
+       02:C6D2  69 00             adc #high(#1)
+       02:C6D4  8D C0 00          sta idx16+1
+                                  .else
+                                  .endif
+  790  02:C6D7            .in_run_loop:
+  791                             debug_p ds_x
+                0000              .if     debug
+                                  .endif
+  792  02:C6D7  8E 01 00          stx     debug_num
+  793  02:C6DA  8A                txa
+  794  02:C6DB  A8                tay
+  795                             mov     char, [tmp_addr], Y ; write the content of the run
+                0000              .if 6 = ARG_REG
+                                  .else
+       02:C6DC  AD C4 00          lda char
+       02:C6DF  91 CC             sta [tmp_addr],Y
+                                  .endif
+  796  02:C6E1  A0 00             ldy     #0
+  797  02:C6E3  E8                inx
+  798  02:C6E4  CE C2 00          dec     size
+  799  02:C6E7  CE C1 00          dec     run
+  800  02:C6EA  D0 EB             bne     .in_run_loop
+  801                     
+  802                             ;; done?
+  803  02:C6EC  AD C2 00          lda     size
+  804  02:C6EF  D0 03             bne     .loop_trampoline
+  805  02:C6F1  4C 40 C7          jmp     .done
+  806  02:C6F4            .loop_trampoline:
+  807  02:C6F4  4C 99 C6          jmp     .loop
+  808                             
+  809  02:C6F7            .anti_run:
+  810                             debug_p ds_antirun
+                0000              .if     debug
+                                  .endif
+  811                             mov     [idx16], Y, run ; length of this anti-run
+                0000              .if 4 = ARG_REG
+                                  .else
+       02:C6F7  B1 BF             lda [idx16],Y
+       02:C6F9  8D C1 00          sta run
+                                  .endif
+  812                             inc16   idx16
+                                  add16 idx16, #1
+       02:C6FC  18                clc
+                0001              .if 2 = ARG_IMMED
+       02:C6FD  AD BF 00          lda idx16
+       02:C700  69 01             adc #low(#1)
+       02:C702  8D BF 00          sta idx16
+       02:C705  AD C0 00          lda idx16+1
+       02:C708  69 00             adc #high(#1)
+       02:C70A  8D C0 00          sta idx16+1
+                                  .else
+                                  .endif
+  813  02:C70D            .in_anti_run_loop:
+  814  02:C70D  B1 BF             lda     [idx16], Y
+  815  02:C70F  8D 01 00          sta     debug_num
+  816  02:C712  8D C4 00          sta     char
+  817  02:C715  8A                txa
+  818  02:C716  A8                tay
+  819  02:C717  AD C4 00          lda     char
+  820  02:C71A  91 CC             sta     [tmp_addr], Y ; write the content of the run
+  821  02:C71C  A0 00             ldy     #0
+  822                                             
+  823                             inc16   idx16
+                                  add16 idx16, #1
+       02:C71E  18                clc
+                0001              .if 2 = ARG_IMMED
+       02:C71F  AD BF 00          lda idx16
+       02:C722  69 01             adc #low(#1)
+       02:C724  8D BF 00          sta idx16
+       02:C727  AD C0 00          lda idx16+1
+       02:C72A  69 00             adc #high(#1)
+       02:C72C  8D C0 00          sta idx16+1
+                                  .else
+                                  .endif
+  824  02:C72F  E8                inx
+  825  02:C730  CE C2 00          dec     size
+  826  02:C733  CE C1 00          dec     run
+  827  02:C736  D0 D5             bne     .in_anti_run_loop
+  828                     
+  829                             ;; done?
+  830  02:C738  AD C2 00          lda     size
+  831  02:C73B  F0 03             beq     .done
+  832  02:C73D  4C 99 C6          jmp     .loop
+  833                             
+  834                             
+  835  02:C740            .done:          
+  836  02:C740  60                rts
+  837                                             
+  838                                     
+  839                     ;;; some data
+  840                     ;;; data
+  841           E000              .data
+  842           0002              .bank   2
+  843           C800              .org    $C800
+#[2]   tiles.inc
+  844                             .include "tiles.inc"
+    1                     ;;; tiles, as defined in level.h
+    2                             
+    3           0000              .rsset $0
+    4           0000      T_FLOOR .rs 1
+    5           0001      T_RED   .rs 1
+    6           0002      T_BLUE  .rs 1
+    7           0003      T_GREY  .rs 1
+    8           0004      T_GREEN .rs 1
+    9           0005      T_EXIT  .rs 1
+   10           0006      T_HOLE  .rs 1
+   11           0007      T_GOLD  .rs 1
+   12           0008      T_LASER .rs 1
+   13           0009      T_PANEL .rs 1
+   14           000A      T_STOP  .rs 1
+   15           000B      T_RIGHT .rs 1
+   16           000C      T_LEFT  .rs 1
+   17           000D      T_UP    .rs 1
+   18           000E      T_DOWN  .rs 1
+   19           000F      T_ROUGH .rs 1
+   20                     
+   21           0010      T_ELECTRIC      .rs 1
+   22           0011      T_ON    .rs 1
+   23           0012      T_OFF   .rs 1
+   24           0013      T_TRANSPORT     .rs 1
+   25           0014      T_BROKEN        .rs 1
+   26           0015      T_LR    .rs 1
+   27           0016      T_UD    .rs 1
+   28           0017      T_0     .rs 1
+   29           0018      T_1     .rs 1
+   30           0019      T_NS    .rs 1
+   31           001A      T_NE    .rs 1
+   32           001B      T_NW    .rs 1
+   33           001C      T_SE    .rs 1
+   34           001D      T_SW    .rs 1
+   35           001E      T_WE    .rs 1
+   36           001F      T_BUTTON        .rs 1
+   37                     
+   38           0020      T_BLIGHT        .rs 1
+   39           0021      T_RLIGHT        .rs 1
+   40           0022      T_GLIGHT        .rs 1
+   41           0023      T_BLACK .rs 1
+   42           0024      T_BUP   .rs 1
+   43           0025      T_BDOWN .rs 1
+   44           0026      T_RUP   .rs 1
+   45           0027      T_RDOWN .rs 1
+   46           0028      T_GUP   .rs 1
+   47           0029      T_GDOWN .rs 1
+   48           002A      T_BSPHERE       .rs 1
+   49           002B      T_RSPHERE       .rs 1
+   50           002C      T_GSPHERE       .rs 1
+   51           002D      T_SPHERE        .rs 1
+   52           002E      T_UNUSED_1      .rs 1
+   53           002F      T_UNUSED_2      .rs 1
+   54                     
+   55           0030      T_BPANEL        .rs 1
+   56           0031      T_RPANEL        .rs 1
+   57           0032      T_GPANEL        .rs 1
+   58                     
+   59  02:C800            letter_start:
+   60  02:C800  A0                .db $A0
+   61  02:C801            laser_sprite_byte:
+   62  02:C801  04                .db 4
+   63                     
+   64           0001      dir_up          .equ 1
+   65           0002      dir_down        .equ 2
+   66           0003      dir_left        .equ 3
+   67           0004      dir_right       .equ 4
+   68                     
+   69  02:C802            guy_u_tile:
+   70  02:C802  E0 E1 F0          .db $E0,$E1,$F0,$F1
+       02:C805  F1        
+   71  02:C806            guy_d_tile:
+   72  02:C806  E2 E3 F2          .db $E2,$E3,$F2,$F3
+       02:C809  F3        
+   73  02:C80A            guy_l_tile:
+   74  02:C80A  E4 E5 F4          .db $E4,$E5,$F4,$F5
+       02:C80D  F5        
+   75  02:C80E            laser_tile:
+   76  02:C80E  E6 F6             .db $E6, $F6
+   77                     
+   78                             
+   79  02:C810            tile_name_table:
+   80  02:C810  6C 02 02          .db $6C,$02,$02,$02,$02,$04,$06,$6E,$08,$44,$0A,$20,$24,$26,$22,$0C, ...
+       02:C813  02 02 04  
+       02:C816  06 6E 08  
+       02:C819  44 0A 20  
+       02:C81C  24 26 22  
+       02:C81F  0C 80 28  
+       02:C822  2A 0E 46  
+       02:C825  2C 2E 40  
+       02:C828  42 48 4A  
+       02:C82B  4C 4E 60  
+       02:C82E  62 64 66  
+       02:C831  66 66 00  
+       02:C834  68 6C 68  
+       02:C837  6C 68 6C  
+       02:C83A  6A 6A 6A  
+       02:C83D  6A 00 00  
+       02:C840  82 82 82  
+   84                     
+   85  02:C843            tile_attr_table:
+   86  02:C843  00 55 AA          .db $00,$55,$AA,$00,$FF,$AA,$00,$00,$55,$00,$55,$00,$00,$00,$00,$00, ...
+       02:C846  00 FF AA  
+       02:C849  00 00 55  
+       02:C84C  00 55 00  
+       02:C84F  00 00 00  
+       02:C852  00 55 55  
+       02:C855  00 00 00  
+       02:C858  00 00 00  
+       02:C85B  00 00 00  
+       02:C85E  00 00 00  
+       02:C861  00 00 AA  
+       02:C864  55 FF 00  
+       02:C867  AA AA 55  
+       02:C86A  55 FF FF  
+       02:C86D  AA 55 FF  
+       02:C870  00 00 00  
+       02:C873  AA 55 FF  
+   90                     
+   91  02:C876            tile_pos_table_1:
+   92  02:C876  00 02 04          .db $00,$02,$04,$06,$08,$0A,$0C,$0E,$10,$12,$14,$16,$18,$1A,$1C,$1E, ...
+       02:C879  06 08 0A  
+       02:C87C  0C 0E 10  
+       02:C87F  12 14 16  
+       02:C882  18 1A 1C  
+       02:C885  1E 00 02  
+       02:C888  40 42 44  
+       02:C88B  46 48 4A  
+       02:C88E  4C 4E 50  
+       02:C891  52 54 56  
+       02:C894  58 5A 5C  
+       02:C897  5E 40 42  
+       02:C89A  80 82 84  
+       02:C89D  86 88 8A  
+       02:C8A0  8C 8E 90  
+       02:C8A3  92 94 96  
+       02:C8A6  98 9A 9C  
+       02:C8A9  9E 80 82  
+       02:C8AC  C0 C2 C4  
+       02:C8AF  C6 C8 CA  
+       02:C8B2  CC CE D0  
+       02:C8B5  D2 D4 D6  
+       02:C8B8  D8 DA DC  
+       02:C8BB  DE C0 C2  
+       02:C8BE  00 02 04  
+       02:C8C1  06 08 0A  
+       02:C8C4  0C 0E 10  
+       02:C8C7  12 14 16  
+       02:C8CA  18 1A 1C  
+       02:C8CD  1E 00 02  
+       02:C8D0  40 42 44  
+       02:C8D3  46 48 4A  
+       02:C8D6  4C 4E 50  
+       02:C8D9  52 54 56  
+       02:C8DC  58 5A 5C  
+       02:C8DF  5E 40 42  
+       02:C8E2  80 82 84  
+       02:C8E5  86 88 8A  
+       02:C8E8  8C 8E 90  
+       02:C8EB  92 94 96  
+       02:C8EE  98 9A 9C  
+       02:C8F1  9E 80 82  
+       02:C8F4  C0 C2 C4  
+       02:C8F7  C6 C8 CA  
+       02:C8FA  CC CE D0  
+       02:C8FD  D2 D4 D6  
+       02:C900  D8 DA DC  
+       02:C903  DE C0 C2  
+       02:C906  00 02 04  
+       02:C909  06 08 0A  
+       02:C90C  0C 0E 10  
+       02:C90F  12 14 16  
+       02:C912  18 1A 1C  
+       02:C915  1E 00 02  
+       02:C918  40 42 44  
+       02:C91B  46 48 4A  
+       02:C91E  4C 4E 50  
+       02:C921  52 54 56  
+       02:C924  58 5A 5C  
+       02:C927  5E 40 42  
+  112  02:C92A            tile_pos_table_2:
+  113  02:C92A  00 00 00          .db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00, ...
+       02:C92D  00 00 00  
+       02:C930  00 00 00  
+       02:C933  00 00 00  
+       02:C936  00 00 00  
+       02:C939  00 04 04  
+       02:C93C  00 00 00  
+       02:C93F  00 00 00  
+       02:C942  00 00 00  
+       02:C945  00 00 00  
+       02:C948  00 00 00  
+       02:C94B  00 04 04  
+       02:C94E  00 00 00  
+       02:C951  00 00 00  
+       02:C954  00 00 00  
+       02:C957  00 00 00  
+       02:C95A  00 00 00  
+       02:C95D  00 04 04  
+       02:C960  00 00 00  
+       02:C963  00 00 00  
+       02:C966  00 00 00  
+       02:C969  00 00 00  
+       02:C96C  00 00 00  
+       02:C96F  00 04 04  
+       02:C972  01 01 01  
+       02:C975  01 01 01  
+       02:C978  01 01 01  
+       02:C97B  01 01 01  
+       02:C97E  01 01 01  
+       02:C981  01 05 05  
+       02:C984  01 01 01  
+       02:C987  01 01 01  
+       02:C98A  01 01 01  
+       02:C98D  01 01 01  
+       02:C990  01 01 01  
+       02:C993  01 05 05  
+       02:C996  01 01 01  
+       02:C999  01 01 01  
+       02:C99C  01 01 01  
+       02:C99F  01 01 01  
+       02:C9A2  01 01 01  
+       02:C9A5  01 05 05  
+       02:C9A8  01 01 01  
+       02:C9AB  01 01 01  
+       02:C9AE  01 01 01  
+       02:C9B1  01 01 01  
+       02:C9B4  01 01 01  
+       02:C9B7  01 05 05  
+       02:C9BA  02 02 02  
+       02:C9BD  02 02 02  
+       02:C9C0  02 02 02  
+       02:C9C3  02 02 02  
+       02:C9C6  02 02 02  
+       02:C9C9  02 06 06  
+       02:C9CC  02 02 02  
+       02:C9CF  02 02 02  
+       02:C9D2  02 02 02  
+       02:C9D5  02 02 02  
+       02:C9D8  02 02 02  
+       02:C9DB  02 06 06  
+  133                             
+#[1]   escape.s
+  845                     
+  846                     
+  847  02:C9DE            levels: 
+  848  02:C9DE  F6 C9             .dw sample_level01, ...
+       02:C9E0  9F CA     
+       02:C9E2  40 CB     
+       02:C9E4  C9 CB     
+       02:C9E6  83 CC     
+       02:C9E8  34 CD     
+       02:C9EA  B7 CD     
+       02:C9EC  4F CE     
+       02:C9EE  0F CF     
+       02:C9F0  A9 CF     
+       02:C9F2  6D D0     
+       02:C9F4  31 D1     
+  860                     
+  861  02:C9F6            sample_level01: 
+  862  02:C9F6                    .incbin "levels/tutor01.esx"            
+  863  02:CA9F            sample_level02: 
+  864  02:CA9F                    .incbin "levels/tutor02.esx"            
+  865  02:CB40            sample_level03: 
+  866  02:CB40                    .incbin "levels/tutor03.esx"            
+  867  02:CBC9            sample_level04: 
+  868  02:CBC9                    .incbin "levels/tutor04.esx"            
+  869  02:CC83            sample_level05: 
+  870  02:CC83                    .incbin "levels/tutor05.esx"            
+  871  02:CD34            sample_level06: 
+  872  02:CD34                    .incbin "levels/tutor06.esx"            
+  873  02:CDB7            sample_level07: 
+  874  02:CDB7                    .incbin "levels/tutor07.esx"            
+  875  02:CE4F            sample_level08: 
+  876  02:CE4F                    .incbin "levels/tutor08.esx"            
+  877  02:CF0F            sample_level09: 
+  878  02:CF0F                    .incbin "levels/tutor09.esx"            
+  879  02:CFA9            sample_level10: 
+  880  02:CFA9                    .incbin "levels/tutor10.esx"            
+  881  02:D06D            sample_level11: 
+  882  02:D06D                    .incbin "levels/tutor11.esx"            
+  883  02:D131            sample_level12: 
+  884  02:D131                    .incbin "levels/tutor12.esx"            
+  885                     
+  886                     
+  887  02:D209  62 65 67  ds_begin .db    "begin",0
+       02:D20C  69 6E 00  
+  888  02:D20F  72 6C 65  ds1:    .db     "rledecode",0
+       02:D212  64 65 63  
+       02:D215  6F 64 65  
+       02:D218  00        
+  889  02:D219  70 70 75  ds_ppu: .db     "ppu_on",0
+       02:D21C  5F 6F 6E  
+       02:D21F  00        
+  890  02:D220  72 75 6E  ds_run: .db     "run",0
+       02:D223  00        
+  891  02:D224  61 72 75  ds_antirun:     .db     "arun",0
+       02:D227  6E 00     
+  892  02:D229  78 00     ds_x:   .db     "x",0
+  893  02:D22B  79 00     ds_y:   .db     "y",0
+  894  02:D22D  69 00     ds_i:   .db     "i",0
+  895  02:D22F  74 6D 70  ds_tmpaddr:     .db     "tmp_addr",0
+       02:D232  5F 61 64  
+       02:D235  64 72 00  
+  896  02:D238  74 69 6C  ds_tiles:       .db     "tiles",0
+       02:D23B  65 73 00  
+  897  02:D23E  64 72 61  ds_draw_guy     .db     "draw_guy",0
+       02:D241  77 5F 67  
+       02:D244  75 79 00  
+  898                                             
+  899                     ;;; vectors
+  900           0003              .bank   3
+  901           FFFA              .org    $FFFA
+  902  03:FFFA  00 C0             .dw     intr,start,intr
+       03:FFFC  02 C0     
+       03:FFFE  00 C0     
+  903                     
+  904                     
+  905           0004              .bank   4
+  906  04:0000                    .incbin "escape.chr"
+  907  04:1000                    .incbin "debug.chr"

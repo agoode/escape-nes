@@ -1,0 +1,7 @@
+;;; macro to set a tile  (tile, pos, off)
+	.macro	set_tile
+	mov	\3, tile_offset
+	mov	\2, tile_pos
+	mov16	\1, tile
+	jsr	draw_tile
+	.endm

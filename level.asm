@@ -160,6 +160,38 @@ settile_func:
 	jsr	update_tile_buffer
 	rts
 
+checkstepoff:	.macro
+	ldx	\1
+	ldy	\2
+	jsr	checkstepoff_func
+	.endm
+
+checkstepoff_func:
+	jsr	checkleavepanel_func
+	jsr	tileat_func
+	cmp	#T_TRAP1
+	beq	.t_hole
+	cmp	#T_TRAP2
+	beq	.t_trap1
+
+	rts
+
+.t_hole:	
+	mov	#T_HOLE,new_tile
+	rts
+.t_trap1
+	mov	#T_TRAP1,new_tile
+	rts
+	
+
+checkleavepanel_func:
+	jsr	tileat
+	cmp	#T_PANEL
+	beq	.swap
+	rts
+.swap:
+	jmp	swapo
+	
 	
 realpanel:
 	tax			; save the flag
@@ -326,15 +358,30 @@ push_block:
 
 	lda	target
 	cmp	#T_LR
-	beq	.no_move
+	bne	.next4_1
+	jmp	.no_move
+.next4_1:	
 	cmp	#T_UD
-	beq	.no_move
+	bne	.next4_2
+	jmp	.no_move
 
+.next4_2:	
 	settile	newx,newy,replacement
 	jmp	plain_move
 
+.next5:
+	tileat	destx,desty
+	cmp	#T_HOLE
+	bne	.next6
+	lda	target
+	cmp	#T_GREY
+	bne	.no_move
 
-.next5:				; regular panel
+	settile	destx,desty, #T_FLOOR
+	settile	newx,newy,replacement
+	jmp	plain_move
+
+.next6:				; regular panel
 	tileat	destx,desty
 	cmp	#T_PANEL
 	bne	.no_move
@@ -356,6 +403,24 @@ push_block:
 
 
 push_green:
+	;; check to make sure the block can move
+	travel	newx,newy,newd,destx,desty
+	bne	.next1
+	jmp	.no_move
+
+.next1:
+	tileat	destx,desty
+	cmp	#T_FLOOR
+	bne	.no_move
+
+	;; set stuff
+	settile	destx,desty, #T_BLUE
+	settile newx,newy, #T_FLOOR
+
+
+	jmp	plain_move
+.no_move:	
+
 	rts
 
 electric_off:
@@ -372,6 +437,7 @@ transport_guy:
 	rts
 
 break_block:
+	settile newx,newy,#T_FLOOR
 	rts
 
 t_0_t_1_hit:

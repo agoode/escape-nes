@@ -126,14 +126,14 @@ update_tile_buffer:
 
 
 	;; set update flag
-	debug_p	ds_tiles_changed
+; 	debug_p	ds_tiles_changed
 	lda	tile_pos
 	ldx	num_tiles_changed
 	sta	tiles_changed, X
 	inx
 	stx	num_tiles_changed
-	debug_num
-	stx	debug_port
+; 	debug_num
+; 	stx	debug_port
 
 	;; load attribute table buffer entry
 	tax

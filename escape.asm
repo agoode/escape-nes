@@ -18,7 +18,6 @@ debug_port:	.ds 1
 	
 tile_pos: .ds	1
 tile:	.ds	2
-nmi_tile:	.ds	2
 attr_buffer:	.ds	45
 num_tiles_changed:	.ds	1
 
@@ -153,7 +152,7 @@ start:	sei
 
 	.include "palettes.asm"	
 		
-	mov	#1, level_num
+	mov	#0, level_num
 	jsr	choose_level
 	
 ;;; ppu on
@@ -195,60 +194,14 @@ choose_level:
 	lda	level_num
 	debug_num
 	
-	bne	.l1
-	mov16	#sample_level01, level_addr
-	jmp	.go
-.l1:	lda	level_num
-	cmp	#1
-	bne	.l2
-	mov16	#sample_level01, level_addr
-	jmp	.go
-.l2:	lda	level_num
-	cmp	#2
-	bne	.l3
-	mov16	#sample_level02, level_addr
-	jmp	.go
-.l3:	lda	level_num
-	cmp	#3
-	bne	.l4
-	mov16	#sample_level03, level_addr
-	jmp	.go
-.l4:	lda	level_num
-	cmp	#4
-	bne	.l5
-	mov16	#sample_level04, level_addr
-	jmp	.go
-.l5:	lda	level_num
-	cmp	#5
-	bne	.l6
-	mov16	#sample_level05, level_addr
-	jmp	.go
-.l6:	lda	level_num
-	cmp	#6
-	bne	.l7
-	mov16	#sample_level06, level_addr
-	jmp	.go
-.l7:	lda	level_num
-	cmp	#7
-	bne	.l8
-	mov16	#sample_level07, level_addr
-	jmp	.go
-.l8:	lda	level_num
-	cmp	#8
-	bne	.l9
-	mov16	#sample_level08, level_addr
-	jmp	.go
-.l9:	lda	level_num
-	cmp	#9
-	bne	.l10
-	mov16	#sample_level09, level_addr
-	jmp	.go
-.l10:	lda	level_num
-	cmp	#10
-	bne	.l11
-	mov16	#sample_level10, level_addr
-	jmp	.go
-.l11:	mov16	#sample_level12, level_addr
+	clc
+	asl	A
+	tax
+
+	lda	levels,X
+	sta	level_addr
+	lda	levels+1,X
+	sta	level_addr+1	
 		
 .go:	
 	jsr	load_level
@@ -311,9 +264,10 @@ levels:
 	    sample_level12
 
 sample_level01:	
-	.incbin "levels/test1.esx"		
+ 	.incbin "levels/tutor01.esx"		
+; 	.incbin "levels/wires.esx"		
 sample_level02:	
-	.incbin "levels/lev130.esx"		
+	.incbin "levels/tutor02.esx"		
 sample_level03:	
 	.incbin "levels/tutor03.esx"		
 sample_level04:	
@@ -380,10 +334,13 @@ ds_not_gpanel	.db	"not gpanel",0
 ds_not_floor	.db	"not floor",0
 ds_where	.db	"where?",0
 ds_step_table	.db	"going into step table!",0
+ds_swaptiles	.db	"swapping tiles",0
+	.endif
+
+	
 ds_laser_beam	.db	"LASERED!",0
 ds_winner	.db	"SUCCESS!",0
 		
-	.endif
 									
 ;;; vectors
 	.bank	3

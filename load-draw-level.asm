@@ -109,7 +109,7 @@ draw_level:
     	jsr	ppu_off
    	lda	#180
    	sta	drawing_limit
-	jsr	copy_some_tiles_to_ppu
+ 	jsr	copy_some_tiles_to_ppu
 	lda	#8
 	sta	drawing_limit
   	jsr	ppu_on

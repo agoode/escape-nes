@@ -1,5 +1,6 @@
 ppu_on:
 ; 	debug_p	ds_ppu_on
+	jsr	vwait
 	lda	#%10000000
  	sta	$2000	
 ; 	lda	#%00011110

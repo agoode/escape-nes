@@ -1,18 +1,18 @@
 travel:	.macro
 	mov \1,tx
-	debug_num
+; 	debug_num
 	mov \2,ty
-	debug_num
+; 	debug_num
 	mov \3,td
-	debug_num
+; 	debug_num
 
 	jsr	travel_func
 
 	pha
 	mov ttx,\4
-	debug_num
+; 	debug_num
 	mov tty,\5
-	debug_num
+; 	debug_num
 	pla
 	
 	.endm
@@ -97,8 +97,8 @@ tileat_func:
 	jsr	xy_to_index
 	tax
 	lda	tiles, X
-	debug_p ds_tileat
-	debug_num
+; 	debug_p ds_tileat
+; 	debug_num
 	rts
 
 flagat:	.macro
@@ -127,7 +127,7 @@ destat_func:
 	
 
 xy_to_index:
-	debug_p	ds_xy_to_index
+; 	debug_p	ds_xy_to_index
 	clc
 	txa
 
@@ -136,7 +136,7 @@ xy_to_index:
 	adc	#18
 	jmp	.yloop
 .done:
-	debug_num
+; 	debug_num
 	rts
 
 
@@ -182,6 +182,7 @@ swaptiles:	.macro
 	.endm
 
 swaptiles_func:
+	debug_p	ds_swaptiles
 	ldx	#180
 .loop:
 	dex

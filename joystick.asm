@@ -8,6 +8,12 @@ j_left:		.equ	%01000000
 j_right:	.equ	%10000000
 	
 handle_joy:
+	;; don't do it if drawing
+	lda	num_tiles_changed
+	beq	.ok
+	rts
+	
+.ok:	
 	;; clear
 	lda	#0
 	sta	cur_joy_state

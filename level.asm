@@ -147,15 +147,17 @@ settile: .macro
 	ldy	\2
 	mov	\3,new_tile
 	jsr	settile_func
-	jsr	draw_level
+;	jsr	draw_level
 	.endm
 
 settile_func:	
 	jsr	xy_to_index
+	sta	tile_pos
 	tay
 	mov16	#tiles,tile
 	lda	new_tile
 	sta	[tile], Y
+	jsr	update_tile_buffer
 	rts
 
 	
@@ -190,7 +192,7 @@ realpanel:
 
 
 swapo:
-
+	
 	rts
 
 
@@ -269,12 +271,12 @@ push_block:
 
 .next1_1:	
 	;; check the TF_HASPANEL flag
-	flagat	destx,desty
+	flagat	newx,newy
 	and	#TF_HASPANEL
 	beq	.replace_with_floor
 	
 	;; if it has it, then set the replacement to be the panel
-	flagat	destx,desty
+	flagat	newx,newy
 	jsr	realpanel
 	sta	replacement
 	jmp	.next2

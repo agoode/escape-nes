@@ -42,5 +42,13 @@ zero_ppu_memory:
 	dex
 	bne	.zero2
 
+	
+	lda	#0
+	ldx	#45
+.zero_buffer:
+	sta	attr_buffer, X
+	dex
+	bpl	.zero_buffer
+	
 	rts
 	

@@ -18,7 +18,9 @@ debug_port:	.ds 1
 	
 tile_pos: .ds	1
 tile:	.ds	2
-tiles:	.ds	180
+nmi_tile:	.ds	2
+attr_buffer:	.ds	45
+num_tiles_changed:	.ds	1
 
 new_tile:	.ds	1
 	
@@ -53,25 +55,34 @@ tmp16_2: .ds	2
 tmp_size: .ds	2
 tmp_addr: .ds	2
 
+screen_pos:	.ds	2
+nmi_tmp:	.ds	1
+
 x_scroll: .ds	1
 	
 level_addr:	.ds	3
 
 sprite_dma_ok:	.ds	1		
+safe_to_draw:	.ds	1
 cur_joy_state:	.ds	1
 last_joy_state:	.ds	1
-vwait_expected:	.ds	1
-nmi_finished:	.ds	1
+tiles_drawn:	.ds	1
 				
 	.bss
 
 sprite:	.ds	256
+tiles:	.ds	180
 otiles: .ds	180
 dests:	.ds	180
 flags:	.ds	180
 title:	.ds	36
 author:	.ds	20
-		
+
+tiles_changed:	.ds	180
+
+			
+vwait_expected:	.ds	1
+nmi_finished:	.ds	1
 
 	
 ;;; initialize
@@ -98,6 +109,8 @@ author:	.ds	20
 		
 start:	sei
 
+	mov	#0,safe_to_draw
+	
 	jsr	vwait	
 	jsr	ppu_off
 	jsr	init_sprite_memory
@@ -205,7 +218,6 @@ vwait:
 .vwait_in:
 	lda	$2002
 	bpl	.vwait_in
-	mov	#0,vwait_expected
 
 	lda	nmi_finished
 	bne	.ok
@@ -303,7 +315,9 @@ ds_s1_s2	.db	"s2->s1?",0
 ds_tileat	.db	"tileat",0
 ds_xy_to_index	.db	"xy_to_index",0
 ds_plain_move	.db	"plain_move",0
-ds_no_move:	.db	"no_move",0
+ds_no_move	.db	"no_move",0
+ds_tiles_changed .db	"tiles changed",0
+	
 	.endif
 									
 ;;; vectors

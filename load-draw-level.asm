@@ -1,9 +1,9 @@
 load_level:
 	debug_p ds_load_level
+	mov	#0,safe_to_draw
 	mov	#0, tmp_size+1
 	mov	#dir_down, gd
-	mov	#0, x_scroll
-			
+
 	mov16	level_addr, idx16
 	ldy	#0
 	mov	[idx16], Y, debug_str
@@ -77,23 +77,41 @@ load_level:
 	mov16	#flags, tmp_addr
  	jsr	rledecode
 
+	mov	#1,safe_to_draw
 	rts
 		
 	
 draw_level:
-	jsr	ppu_off
+; 	jsr	ppu_off
 ; 	jsr	zero_ppu_memory
-	debug_p ds_draw_level
+;	debug_p ds_draw_level
 	;; assumes load_level just called
-		
-	mov	#0, tile_pos
+
+	lda	#0
+	sta	tile_pos
+
 .loop:	lda	tile_pos
 	cmp	#180
 	beq	.done
-	bit	#%00000100
-	bne	.continue
-.continue:	
+
+	jsr	update_tile_buffer
+.next:	
+	inc	tile_pos
+	jmp	.loop
+
+.done:
+;	jsr	ppu_on
+	rts
+
+
+
+
+
+update_tile_buffer:	
+	;; figure out the tile
 	ldx	tile_pos
+	mov	tile_pos_table_2, X, screen_pos+1
+	mov	tile_pos_table_1, X, screen_pos
 
 	;; get the tile
 	lda	tiles, X
@@ -103,59 +121,30 @@ draw_level:
 	lda	tile_attr_table, X
 	sta	tile+1	
 
-	jsr	draw_tile
-	inc	tile_pos
-	jmp	.loop
 
-.done:	jsr	ppu_on		
-	rts
+	;; set update flag
+	debug_p	ds_tiles_changed
+	lda	tile_pos
+	ldx	num_tiles_changed
+	sta	tiles_changed, X
+	inx
+	stx	num_tiles_changed
+	debug_num
+	stx	debug_port
 
-
-draw_tile:
-screen_pos .equ	tmp16
-	;; figure out the tile
-	ldx	tile_pos
-	mov	tile_pos_table_2, X, screen_pos+1
-	mov	tile_pos_table_1, X, screen_pos
+	;; load attribute table buffer entry
+	tax
+	lda	tile_index_to_attr_buffer, X
+	tay
+	lda	attr_buffer, Y
+	tax
 
 	;; get the PPU address for nametable spot
 	add16	screen_pos, #$20C0
 
-	;; translate into PPU address for attribute table spot
-	lda	screen_pos
-	asl	a
-	lda	screen_pos+1
-	rol	a
-	and	#%00000111
-	asl	a
-	asl	a
-	asl	a
-	sta	tmp
-	lda	screen_pos
-	and	#%00011100
-	lsr	a
-	lsr	a
-	ora	tmp
-	adc	#$C0	
-
-	sta	tmp
-	lda	screen_pos+1
-	and	#%11111100
-	clc
-	adc	#$3	
-	sta	$2006		; set address of thing
-	tay
-	lda	tmp
-	sta	$2006	
- 	ldx	$2007		; invalid data
- 	ldx	$2007		; correct data
-;	stx	debug_num
-	sty	$2006		; reset address
-	sta	$2006
-
 	;; x now has the existing attribute table entry
+	;; and y has the offset into the attr_buffer
 	;; so that we can update the bits we need
-	
 	lda	screen_pos	; find the bit
 	and	#%01000010
 	bne	.test1
@@ -167,8 +156,8 @@ screen_pos .equ	tmp16
 	txa
 	and	#%11111100
 	ora	tmp
-	sta	$2007		; set the color
-	jmp	.update_tile
+	sta	attr_buffer, Y		; set the color
+	jmp	.done
 
 
 .test1:	cmp	#%00000010
@@ -181,8 +170,8 @@ screen_pos .equ	tmp16
 	txa
 	and	#%11110011
 	ora	tmp
-	sta	$2007
-	jmp	.update_tile
+	sta	attr_buffer, Y
+	jmp	.done
 
 .test2:	cmp	#%01000000
 	bne	.test3
@@ -194,8 +183,8 @@ screen_pos .equ	tmp16
 	txa
 	and	#%11001111
 	ora	tmp
-	sta	$2007
-	jmp	.update_tile
+	sta	attr_buffer, Y
+	jmp	.done
 
 .test3:	lda	tile+1
 
@@ -205,9 +194,54 @@ screen_pos .equ	tmp16
 	txa
 	and	#%00111111
 	ora	tmp
-	sta	$2007
+	sta	attr_buffer, Y
 	
 
+.done:	
+	rts
+
+
+
+copy_some_tiles_to_ppu:
+	lda	#0
+	sta	tiles_drawn
+
+.check_if_work:	
+	lda	num_tiles_changed
+	bne	.draw_loop
+	rts
+
+.draw_loop:
+	lda	tiles_drawn
+	cmp	#4
+	bne	.continue
+	rts
+	
+.continue:
+	;; figure out the tile
+	ldx	num_tiles_changed
+	stx	debug_port
+	dex
+	lda	tiles_changed, X
+	tax
+	stx	debug_port
+	mov	tile_pos_table_2, X, screen_pos+1
+	mov	tile_pos_table_1, X, screen_pos
+
+	;; get the tile
+	lda	tiles, X
+	tax
+	lda	tile_name_table, X
+	sta	tile
+
+	
+	;; load attribute table buffer entry
+	tax
+	lda	tile_index_to_attr_buffer, X
+	tay
+	lda	attr_buffer, Y
+	tax
+	
 .update_tile:
 	;; actually write into the nametable (2x2 tiles)
 	lda	screen_pos+1
@@ -246,4 +280,11 @@ screen_pos .equ	tmp16
 	lda	tile
 	sta	$2007		; update the tile
 
+
+
+	dec	num_tiles_changed
+	inc	tiles_drawn
+	jmp	.check_if_work
+.done:
+	
 	rts

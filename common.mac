@@ -95,6 +95,12 @@ strcpyp2c	.macro
 	.endm
 
 debug .equ 1
+debug_num .macro
+	.if	debug
+	sta	debug_port
+	.endif
+	.endm
+	
 debug_p	.macro
 	.if	debug
 	pha

@@ -13,7 +13,7 @@
 
 	.zp
 debug_str:	.ds 1
-debug_num:	.ds 1
+debug_port:	.ds 1
 
 	
 tile_pos: .ds	1
@@ -30,6 +30,7 @@ ty:	.ds	1
 td:	.ds	1
 newx:	.ds	1
 newy:	.ds	1
+newd:	.ds	1
 	
 idx16:	.ds	2
 tmp:	.ds	1
@@ -121,7 +122,7 @@ main_loop:
 	
 choose_level:
 	lda	level_num
-	sta	debug_num
+	debug_num
 	
 	bne	.l1
 	mov16	#sample_level01, level_addr
@@ -255,6 +256,7 @@ sample_level12:
 	.incbin "levels/tutor12.esx"		
 
 
+	.if	debug
 ds_begin .db	"begin",0
 ds1:	.db	"rledecode",0
 ds_ppu_off:	.db "ppu_off",0
@@ -282,6 +284,7 @@ ds_s1_s0	.db	"s0->s1?",0
 ds_s1_s2	.db	"s2->s1?",0
 ds_tileat	.db	"tileat",0
 ds_xy_to_index	.db	"xy_to_index",0
+	.endif
 									
 ;;; vectors
 	.bank	3

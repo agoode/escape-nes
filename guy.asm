@@ -1,51 +1,10 @@
-move_guy_up:
-	debug_p	ds_move_up
-	lda	#dir_up
-	sta	gd
-	travel gx,gy,#dir_up,gx,gy
-	rts
-
-
-move_guy_down:
-	debug_p	ds_move_down
-	lda	#dir_down
-	sta	gd
-	travel gx,gy,#dir_down,gx,gy
-	rts
-
-
-move_guy_right:
-	debug_p	ds_move_right
-	lda	#dir_right
-	sta	gd
-	travel gx,gy,#dir_right,gx,gy
-	beq	.no_move
-	jsr	update_scroll_from_guy
-.no_move:
-	rts
-
-
-move_guy_left:
-	debug_p	ds_move_left
-	lda	#dir_left
-	sta	gd
-	travel gx,gy,#dir_left,gx,gy
-	beq	.no_move	
-	jsr	update_scroll_from_guy
-.no_move:
-	rts
-
-
-
-	
-	
 update_scroll_from_guy:
 	;; depending on which x tile Guy is on, set the scroll
 	;; (between 0-32)
 	debug_p	ds_update_scroll
 	
 	lda	gx
-	sta	debug_num
+	debug_num
 	cmp	#11
 	beq	.scroll1_if_scroll0
 	bpl	.scroll2
@@ -59,7 +18,7 @@ update_scroll_from_guy:
 .scroll1_if_scroll0:
 	debug_p	ds_s1_s0
 	lda	x_scroll
-	sta	debug_num
+	debug_num
 	;cmp	#0
 	beq	.scroll1
 	rts
@@ -74,15 +33,12 @@ update_scroll_from_guy:
 	
 .scroll1:
 	mov	#16,x_scroll
-; 	mov	#1,debug_num
 	rts
 .scroll0:	
 	mov	#0,x_scroll
-; 	mov	#0,debug_num
 	rts	
 .scroll2:
 	mov	#32,x_scroll	
-; 	mov	#2,debug_num
 	rts
 	
 	
@@ -109,7 +65,7 @@ draw_guy:
 	tay	
 
 	lda	gd
-; 	sta	debug_num
+; 	debug_num
 	cmp	#dir_up
 	beq	.up
 

@@ -16,7 +16,7 @@ load_level:
 	mov	#0, debug_str
 	ldy	#15		; ESXL + width + height + MSB of size of title
 	mov	[idx16], Y, tmp_size	; size of title string
-	sta	debug_num
+	debug_num
 	add16	idx16, #16		; move to start of title
 
 	;; copy the title string

@@ -7,9 +7,9 @@ char	.equ tmp_4
 	debug_p	ds1
 ; 	debug_p ds_tmpaddr
 	lda	tmp_addr
-; 	sta	debug_num
+; 	debug_num
 	lda	tmp_addr+1
-; 	sta	debug_num
+; 	debug_num
 	;; take idx16, read from it and advance it, and store
 	;; result in place pointed by tmp_addr
 	mov	#180, size	; size of map
@@ -60,7 +60,7 @@ char	.equ tmp_4
 	inc16	idx16
 .in_anti_run_loop:
 	lda	[idx16], Y
-; 	sta	debug_num
+; 	debug_num
 	sta	char
 	txa
 	tay

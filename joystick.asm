@@ -93,26 +93,26 @@ handle_joy:
 	;; perform actions
 	and	#j_right
 	beq	.act1
-	jsr	move_guy_right
-	jsr	draw_guy
+	mov	#dir_right,newd
+	jsr	do_move
 
 .act1:	lda	last_joy_state
 	and	#j_left
 	beq	.act2
-	jsr	move_guy_left
-	jsr	draw_guy
+	mov	#dir_left,newd
+	jsr	do_move
 
 .act2:	lda	last_joy_state
 	and	#j_down
 	beq	.act3
-	jsr	move_guy_down
-	jsr	draw_guy
+	mov	#dir_down,newd
+	jsr	do_move
 
 .act3:	lda	last_joy_state
 	and	#j_up
 	beq	.act4
-	jsr	move_guy_up
-	jsr	draw_guy
+	mov	#dir_up,newd
+	jsr	do_move
 
 .act4:	lda	last_joy_state
 	and	#j_start

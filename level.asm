@@ -1,18 +1,18 @@
 travel:	.macro
 	pha
 	mov \1,tx
-	sta	debug_num
+	debug_num
 	mov \2,ty
-	sta	debug_num
+	debug_num
 	mov \3,td
-	sta	debug_num
+	debug_num
 
 	jsr	travel_func
 
 	mov newx,\4
-	sta	debug_num
+	debug_num
 	mov newy,\5
-	sta	debug_num
+	debug_num
 
 	pla
 	.endm
@@ -99,7 +99,7 @@ tileat_func:
 	mov16	#tiles,tile
 	lda	[tile], Y
 	debug_p ds_tileat
-	sta	debug_num
+	debug_num
 	rts
 
 
@@ -113,5 +113,21 @@ xy_to_index:
 	adc	#18
 	jmp	.yloop
 .done:
-	sta	debug_num
+	debug_num
 	rts
+
+
+do_move:
+	lda	newd
+	sta	gd
+	travel gx,gy,newd,newx,newy
+	beq	.no_move
+	mov	newx,gx
+	mov	newy,gy
+	jsr	update_scroll_from_guy
+	jsr	draw_guy
+.no_move:
+	rts
+
+	
+	

@@ -270,6 +270,7 @@ levels:
 	    sample_level10, \
 	    sample_level11, \
 	    sample_level12, \
+	    sample_level13, \
 	    lev138, \
 	    lev129, \
 	    lev141, \
@@ -313,6 +314,8 @@ sample_level11:
 	.incbin "levels/tutor11.esx"		
 sample_level12:	
 	.incbin "levels/tutor12.esx"
+sample_level13:	
+	.incbin "levels/tutor13.esx"
 
 	.bank 1
 	.org  $A000

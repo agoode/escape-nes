@@ -8,8 +8,7 @@ ppu_on:
 	lda	#1
 	sta	ppu_safe
 		
-	jsr	vwait
-	rts
+	jmp	vwait
 
 ppu_off:
 ; 	debug_p ds_ppu_off

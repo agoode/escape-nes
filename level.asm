@@ -155,8 +155,8 @@ where:	;; index is in A, put x and y in X and Y
 	jmp	.loop
 	
 .done:
-	stx	debug_port
-	sty	debug_port
+; 	stx	debug_port
+; 	sty	debug_port
 	rts
 
 	

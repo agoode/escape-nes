@@ -23,14 +23,15 @@ copy_string_to_ppu:	.macro
 	sty	tmp
 	lda	#' '
 
-.print\@:	
+.print\@:
 	adc	#$80
 	sta	$2007
 
 	inx
 	jmp	.loop\@
 
-.done\@:	
+.done\@:
+	lda	#0
 	.endm
 
 
@@ -50,14 +51,14 @@ load_level:
 
 	mov16	level_addr, idx16
 	ldy	#0
-	mov	[idx16], Y, debug_str
+; 	mov	[idx16], Y, debug_str
 	iny
-	mov	[idx16], Y, debug_str
+; 	mov	[idx16], Y, debug_str
 	iny
-	mov	[idx16], Y, debug_str
+; 	mov	[idx16], Y, debug_str
 	iny
-	mov	[idx16], Y, debug_str
-	mov	#0, debug_str
+; 	mov	[idx16], Y, debug_str
+; 	mov	#0, debug_str
 	ldy	#15		; ESXL + width + height + MSB of size of title
 	mov	[idx16], Y, tmp_size	; size of title string
 	debug_num

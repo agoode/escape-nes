@@ -114,6 +114,7 @@ draw_level:
 update_tile_buffer:	
 	;; figure out the tile
 	ldx	tile_pos
+	
 	mov	tile_pos_table_2, X, screen_pos+1
 	mov	tile_pos_table_1, X, screen_pos
 
@@ -126,6 +127,14 @@ update_tile_buffer:
 	sta	tile+1	
 
 
+	;; check if dirty already
+	ldx	tile_pos
+	lda	dirty_tiles, X
+	bne	.skip_update
+
+	lda	#1
+	sta	dirty_tiles, X
+		
 	;; set update flag
 ; 	debug_p	ds_tiles_changed
 	lda	tile_pos
@@ -136,6 +145,8 @@ update_tile_buffer:
 ; 	debug_num
 ; 	stx	debug_port
 
+.skip_update:	
+	
 	;; load attribute table buffer entry
 	tax
 	lda	tile_index_to_attr_buffer, X
@@ -234,6 +245,9 @@ copy_some_tiles_to_ppu:
 	mov	tile_pos_table_2, X, screen_pos+1
 	mov	tile_pos_table_1, X, screen_pos
 
+	;; clear dirty field
+	mov	#0, dirty_tiles, X
+
 	;; get the tile
 	lda	tiles, X
 	tax
@@ -298,5 +312,18 @@ copy_some_tiles_to_ppu:
 	inc	tiles_drawn
 	jmp	.check_if_work
 .done:
+	
+	rts
+
+
+init_dirty_tiles:
+	lda	#0
+	ldx	#180
+.loop:	dex
+	beq	.zero
+	sta	dirty_tiles,X
+	jmp	.loop
+	
+.zero:	sta	dirty_tiles	; X=0
 	
 	rts

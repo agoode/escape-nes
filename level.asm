@@ -636,6 +636,7 @@ slide_push:
 	mov	tny,newy
 	tileat	tnx,tny
 	sta	target
+	jmp	.while
 		
 .wend:	
 	mov	newx,goldx
@@ -830,8 +831,7 @@ slide_push:
 	jsr	swapo
 	
 .no_swap:	
-	jsr	make_slide_sound
-	jmp	plain_move
+	jmp	make_slide_sound
 
 
 
@@ -872,8 +872,146 @@ t_1_hit:
 	jmp	make_swap_sound
 
 send_pulse:
+	mov	#dir_up, pulsed
+	jsr	.send_pulse_helper
+	mov	#dir_down, pulsed
+	jsr	.send_pulse_helper
+	mov	#dir_left, pulsed
+	jsr	.send_pulse_helper
+	mov	#dir_right, pulsed
+	jsr	.send_pulse_helper
+	
+	jmp	make_pulse_sound
+
+
+.send_pulse_helper:
+	mov	newx,pulsex
+	mov	newy,pulsey
+
+.while:	travel	pulsex,pulsey,pulsed,pulsex,pulsey
+	bne	.continue
+	jmp	.wend
+
+.continue:	
+	tileat	pulsex,pulsey
+	cmp	#T_BLIGHT
+	beq	.t_blight
+	cmp	#T_RLIGHT
+	beq	.t_rlight
+	cmp	#T_GLIGHT
+	beq	.t_glight
+	cmp	#T_NS
+	beq	.t_ns
+	cmp	#T_WE
+	beq	.t_we
+	cmp	#T_NW
+	beq	.t_nw
+	cmp	#T_SW
+	beq	.t_sw
+	cmp	#T_NE
+	beq	.t_ne
+	cmp	#T_SE
+	bne	.not_se
+	jmp	.t_se
+.not_se:	
+	jmp	.wend
+
+.t_blight:
+	swaptiles #T_BUP, #T_BDOWN
+	jmp	.wend
+.t_rlight:
+	swaptiles #T_RUP, #T_RDOWN
+	jmp	.wend
+.t_glight:
+	swaptiles #T_GUP, #T_GDOWN
+	jmp	.wend
+
+.t_ns:
+	lda	pulsed
+	cmp	#dir_up
+	bne	.t_ns1
+	jmp	.while
+.t_ns1:		
+	cmp	#dir_down
+	bne	.t_ns2
+	jmp	.while
+.t_ns2:	
+	jmp	.wend
+
+	
+.t_we:
+	lda	pulsed
+	cmp	#dir_left
+	bne	.t_we1
+	jmp	.while
+.t_we1:	
+	cmp	#dir_right
+	bne	.t_we2
+	jmp	.while
+.t_we2:	
+	jmp	.wend
+	
+.t_nw:
+	lda	pulsed
+	cmp	#dir_down
+	beq	.dir_left
+	
+	cmp	#dir_right
+	beq	.dir_up
+	
+	jmp	.wend
+	
+.t_sw:
+	lda	pulsed
+	cmp	#dir_up
+	beq	.dir_left
+	
+	cmp	#dir_right
+	beq	.dir_down
+	
+	jmp	.wend
+	
+.t_ne:
+	lda	pulsed
+	cmp	#dir_down
+	beq	.dir_right
+	
+	cmp	#dir_left
+	beq	.dir_up
+	
+	jmp	.wend
+	
+.t_se:
+	lda	pulsed
+	cmp	#dir_up
+	beq	.dir_right
+	
+	cmp	#dir_left
+	beq	.dir_down
+	
+	jmp	.wend
+	
+.dir_left:
+	mov	#dir_left,pulsed
+	jmp	.while
+
+.dir_right:
+	mov	#dir_right,pulsed
+	jmp	.while
+
+.dir_up:
+	mov	#dir_up,pulsed
+	jmp	.while
+
+.dir_down:
+	mov	#dir_down,pulsed
+	jmp	.while
+
+	
+.wend:	
+
 	rts
-		
+	
 
 step_table:
 		;; 0-15

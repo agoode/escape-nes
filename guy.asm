@@ -5,11 +5,11 @@ update_scroll_from_guy:
 	
 	lda	gx
 	debug_num
-	cmp	#11
+	cmp	#12
 	beq	.scroll1_if_scroll0
 	bpl	.scroll2
 
-	cmp	#6
+	cmp	#5
 	bmi	.scroll0
 	beq	.scroll1_if_scroll2
 	rts

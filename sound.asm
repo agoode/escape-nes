@@ -150,3 +150,9 @@ make_transport_sound:
 	sta	$4003
 	
 	rts
+
+
+make_pulse_sound:
+
+	rts
+	

@@ -48,6 +48,9 @@ tgoldx:	.ds	1
 tgoldy:	.ds	1	
 destx:	.ds	1
 desty:	.ds	1
+pulsex:	.ds	1
+pulsey:	.ds	1
+pulsed:	.ds	1
 landon:	.ds	1
 doswap:	.ds	1
 	
@@ -87,6 +90,7 @@ title:	.ds	36
 author:	.ds	20
 
 tiles_changed:	.ds	180
+dirty_tiles:	.ds	180
 
 vwait_expected:	.ds	1
 nmi_finished:	.ds	1
@@ -123,6 +127,7 @@ start:	sei
 	
 	jsr	ppu_off
 	jsr	init_sprite_memory
+	jsr	init_dirty_tiles
 
 	debug_p	ds_begin
 	
@@ -212,7 +217,7 @@ choose_level:
 	bne	.l11
 	mov16	#sample_level10, level_addr
 	jmp	.go
-.l11:	mov16	#sample_level11, level_addr
+.l11:	mov16	#sample_level12, level_addr
 		
 .go:	
 	jsr	load_level

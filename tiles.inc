@@ -84,6 +84,7 @@ dir_up		.equ 1
 dir_down	.equ 2
 dir_left	.equ 3
 dir_right	.equ 4
+dir_none	.equ 0
 
 guy_u_tile:
 	.db $E0,$E1,$F0,$F1

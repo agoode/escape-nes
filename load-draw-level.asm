@@ -21,6 +21,7 @@ load_level:
 
 	;; copy the title string
 	strcpyp2c	idx16, title, tmp_size
+	debug_p	title
 
 	add16	idx16, tmp_size	; move past the title string
 	ldy	#3		; MSB of size of author
@@ -29,6 +30,7 @@ load_level:
 
 	;; copy the author string
 	strcpyp2c	idx16, author, tmp_size
+	debug_p	author
 
 	add16	idx16, tmp_size	; move past the author string
 

@@ -6,7 +6,7 @@ nmi:
 	lda	vwait_expected
 	bne	.ok
 	debug_p ds_late_vwait
-.ok:	
+.ok:
 	lda	#0
 	sta	$2006
 	sta	$2006
@@ -24,5 +24,7 @@ nmi:
 .no_dma:
 .done:	
 	
+	lda	#1
+	sta	nmi_finished
 	pla
 	rti

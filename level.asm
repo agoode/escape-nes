@@ -123,6 +123,7 @@ step_table_target .equ tmp16
 	sta	gd
 	travel  gx,gy,newd,newx,newy
 	tileat  newx,newy
+	sta	target
 	asl	A
 	tay
 	debug_num
@@ -148,6 +149,33 @@ plain_move:
 	rts
 	
 push_block:
+	lda	target
+	cmp	#T_LR
+	beq	.lr
+	cmp	#T_UD
+	beq	.ud
+
+	jmp	.normal
+
+.lr:
+	lda	newd
+	cmp	#dir_up
+	beq	.no_move
+	cmp	#dir_down
+	beq	.no_move
+
+	jmp	.normal
+
+.ud:
+	lda	newd
+	cmp	#dir_left
+	beq	.no_move
+	cmp	#dir_right
+	beq	.no_move
+
+.normal:
+
+.no_move:	
 	rts
 
 push_green:

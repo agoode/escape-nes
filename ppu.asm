@@ -6,6 +6,7 @@ ppu_on:
 	jsr	vwait
 	lda	#%00011110
  	sta	$2001
+	jsr	vwait
 
 	rts
 
@@ -15,6 +16,8 @@ ppu_off:
 	lda	#0
 	sta	$2000
 	sta	$2001
+	jsr	vwait
+	jsr	vwait
 
 	rts
 

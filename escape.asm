@@ -19,7 +19,8 @@ debug_port:	.ds 1
 tile_pos: .ds	1
 tile:	.ds	2
 tiles:	.ds	180
-
+target:	.ds	1
+	
 level_num:	.ds	1
 		
 gx:	.ds	1
@@ -51,7 +52,8 @@ sprite_dma_ok:	.ds	1
 cur_joy_state:	.ds	1
 last_joy_state:	.ds	1
 vwait_expected:	.ds	1
-			
+nmi_finished:	.ds	1
+				
 	.bss
 
 sprite:	.ds	256
@@ -190,10 +192,16 @@ choose_level:
 	
 vwait:
 	mov	#1,vwait_expected
+	mov	#0,nmi_finished
 .vwait_in:
 	lda	$2002
 	bpl	.vwait_in
 	mov	#0,vwait_expected
+
+	lda	nmi_finished
+	bne	.ok
+	debug_p ds_nmi_not_fired	
+.ok:	
 	rts
 
 
@@ -273,6 +281,7 @@ ds_draw_guy	.db	"draw_guy",0
 ds_load_level	.db	"load level",0
 ds_draw_level	.db	"draw level",0
 ds_late_vwait	.db	"*** missed vwait deadline! ***",0
+ds_nmi_not_fired .db	"*** NMI didn't fire after vwait! ***",0
 ds_start_pressed .db	"START pressed",0
 ds_zero_ppu_memory .db	"zeroing some PPU memory",0
 ds_update_scroll .db	"update scroll from guy",0

@@ -95,9 +95,8 @@ tileat:	.macro
 
 tileat_func:
 	jsr	xy_to_index
-	tay
-	mov16	#tiles,tile
-	lda	[tile], Y
+	tax
+	lda	tiles, X
 	debug_p ds_tileat
 	debug_num
 	rts
@@ -110,9 +109,8 @@ flagat:	.macro
 
 flagat_func:
 	jsr	xy_to_index
-	tay
-	mov16	#flags,tile
-	lda	[tile], Y
+	tax
+	lda	flags, X
 	rts
 	
 destat:	.macro
@@ -123,9 +121,8 @@ destat:	.macro
 
 destat_func:
 	jsr	xy_to_index
-	tay
-	mov16	#dests,tile
-	lda	[tile], Y
+	tax
+	lda	dests, X
 	rts
 	
 
@@ -153,10 +150,9 @@ settile: .macro
 settile_func:	
 	jsr	xy_to_index
 	sta	tile_pos
-	tay
-	mov16	#tiles,tile
+	tax
 	lda	new_tile
-	sta	[tile], Y
+	sta	tiles, X
 	jsr	update_tile_buffer
 	rts
 
@@ -234,19 +230,29 @@ step_table_target .equ tmp16
 	lda	newd
 	sta	gd
 	travel  gx,gy,newd,newx,newy
+	lda	gx
+	cmp	newx		; check for actual movement
+	bne	.continue
+	lda	gy
+	cmp	newy
+	bne	.continue
+
+	;; no movement!
+	jmp	no_move
+
+.continue:	
 	tileat  newx,newy
 	sta	target
 	asl	A
-	tay
-	debug_num
-	mov16	#step_table,step_table_target
-	lda	[step_table_target],Y
+
 	tax
-	iny
-	lda	[step_table_target],Y
-	sta	step_table_target+1
-	txa
+	debug_num
+	lda	step_table, X
 	sta	step_table_target
+	inx
+	lda	step_table, X
+	sta	step_table_target+1
+	
 	jmp	[step_table_target]
 
 
@@ -431,7 +437,11 @@ push_green:
 
 
 electric_off:
-	rts
+	;; iterate
+	ldx	#0
+	
+	
+	jmp	make_electric_off_sound
 	
 no_move:
 	debug_p	ds_no_move

@@ -37,3 +37,9 @@ make_break_sound:
 
 	
 	rts
+
+
+make_electric_off_sound:
+
+	rts
+	

@@ -149,7 +149,7 @@ go_to_next_level:
 	lda	level_num
 	clc
 	adc	#1
-	cmp	#12
+	cmp	#27
 	bne	.level_set
 	lda	#0		; reset
 .level_set:	

@@ -320,6 +320,7 @@ ds_xy_to_index	.db	"xy_to_index",0
 ds_plain_move	.db	"plain_move",0
 ds_no_move	.db	"no_move",0
 ds_tiles_changed .db	"tiles changed",0
+ds_electric_off	.db	"turning electric off",0
 	
 	.endif
 									

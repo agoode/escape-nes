@@ -13,14 +13,14 @@ make_step_noise:
 
 make_no_move_sound:
 	lda	#$0
-	sta	$4000
-	sta	$4001
+	sta	$4004
+	sta	$4005
 
 	lda	#%11111111
-	sta	$4002
+	sta	$4006
 
 	lda	#%00000011
-	sta	$4003
+	sta	$4007
 
 	rts
 
@@ -40,6 +40,17 @@ make_break_sound:
 
 
 make_electric_off_sound:
+	lda	#%10000110
+	sta	$4000
 
+	lda	#%10110101
+	sta	$4001
+
+	lda	#%00011110
+	sta	$4002
+
+	lda	#%00001100
+	sta	$4003
+	
 	rts
 	

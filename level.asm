@@ -431,12 +431,27 @@ push_green:
 
 
 electric_off:
-	;; iterate
-	ldx	#0
-.e_loop:
+	settile	newx,newy, #T_OFF
 	
+	;; iterate over all
+	debug_p	ds_electric_off
+	ldx	#180
+.e_loop:
+	stx	debug_port
+	dex
+	beq	.done
+	lda	tiles, X
+	cmp	#T_ELECTRIC
+	beq	.update
+	jmp	.e_loop
+.update:
+	lda	#T_FLOOR
+	sta	tiles, X
+	stx	tile_pos
+	jsr	update_tile_buffer
+	ldx	tile_pos
+	jmp	.e_loop
 .done:
-	jsr	ppu_on
 	jmp	make_electric_off_sound
 	
 no_move:

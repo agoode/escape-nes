@@ -1,7 +1,7 @@
 load_level:
 	debug_p ds_load_level
 	mov	#0, tmp_size+1
-	mov	#dir_right, gd
+	mov	#dir_down, gd
 	mov	#0, x_scroll
 			
 	mov16	level_addr, idx16
@@ -79,7 +79,7 @@ load_level:
 	
 draw_level:
 	jsr	ppu_off
- 	jsr	zero_ppu_memory
+; 	jsr	zero_ppu_memory
 	debug_p ds_draw_level
 	;; assumes load_level just called
 		
@@ -150,41 +150,57 @@ screen_pos .equ	tmp16
 	sty	$2006		; reset address
 	sta	$2006
 
+	;; x now has the existing attribute table entry
+	;; so that we can update the bits we need
+	
 	lda	screen_pos	; find the bit
 	and	#%01000010
 	bne	.test1
+
+	;; case 1
 	lda	tile+1
 	and	#%00000011
 	sta	tmp
 	txa
+	and	#%11111100
 	ora	tmp
 	sta	$2007		; set the color
 	jmp	.update_tile
 
+
 .test1:	cmp	#%00000010
 	bne	.test2
+
+	;; case 2
 	lda	tile+1
 	and	#%00001100
 	sta	tmp
 	txa
+	and	#%11110011
 	ora	tmp
 	sta	$2007
 	jmp	.update_tile
 
 .test2:	cmp	#%01000000
 	bne	.test3
+
+	;; case 3
 	lda	tile+1
 	and	#%00110000
 	sta	tmp
 	txa
+	and	#%11001111
 	ora	tmp
 	sta	$2007
 	jmp	.update_tile
 
 .test3:	lda	tile+1
+
+	;; case 4
 	and	#%11000000
 	sta	tmp
 	txa
+	and	#%00111111
 	ora	tmp
 	sta	$2007
 	

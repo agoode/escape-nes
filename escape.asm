@@ -124,7 +124,7 @@ choose_level:
 .l1:	lda	level_num
 	cmp	#1
 	bne	.l2
-	mov16	#sample_level02, level_addr
+	mov16	#sample_level01, level_addr
 	jmp	.go
 .l2:	lda	level_num
 	cmp	#2
